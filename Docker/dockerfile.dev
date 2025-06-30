@@ -1,0 +1,14 @@
+FROM python:slim
+
+RUN apt-get install -y --no-install-recommends bash && rm -rf /var/lib/apt/lists/* 
+COPY requirements.txt .
+
+RUN pip install -r requirements.txt
+
+RUN apt-get update && apt-get install -y mosquitto-clients
+
+COPY . ./app/
+
+WORKDIR /app
+
+CMD ["tail", "-f", "/dev/null"]
