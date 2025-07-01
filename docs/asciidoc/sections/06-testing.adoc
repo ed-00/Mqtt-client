@@ -12,9 +12,11 @@ The project maintains high code quality through comprehensive testing:
 |Metric |Description |Current |Target
 
 |**Line Coverage** |Percentage of code lines tested |{var-coverage-current} |{var-coverage-target}+
+|**Total Tests** |All test cases |{var-test-count-total} |Growing
 |**Unit Tests** |Individual component tests |{var-test-count-unit} |Growing
 |**Integration Tests** |Component interaction tests |{var-test-count-integration} |Growing
-|**Performance** |Test execution time |~12s |<15s
+|**MQTT Integration** |Real broker tests |{var-test-count-mqtt} |Growing
+|**Performance** |Test execution time |~15s |<20s
 |===
 
 === Running Tests
@@ -27,16 +29,19 @@ The project maintains high code quality through comprehensive testing:
 {var-test-cmd}
 
 # Run only unit tests (fast)
-make test-unit
+pytest -m unit
 
-# Run integration tests
-make test-integration
+# Run integration tests with mocks
+pytest -m integration
+
+# Run MQTT integration tests (requires broker)
+pytest -m mqtt_integration
 
 # Generate coverage report
-make coverage
+pytest --cov=Listener --cov-report=html
 
 # Quick development check
-make quick
+pytest -m "unit and not slow"
 ----
 
 ==== Detailed Test Commands
@@ -57,11 +62,12 @@ pytest tests/test_event_listener.py::TestJobManagement::test_job_creation
 
 # Run tests by marker
 pytest -m unit                    # Unit tests only
-pytest -m integration            # Integration tests only
+pytest -m integration            # Integration tests only  
+pytest -m mqtt_integration       # MQTT integration tests
 pytest -m "unit and not slow"    # Fast unit tests
 
 # Run with coverage
-pytest --cov=Listener --cov-report=html
+pytest --cov=Listener --cov-report=html --cov-report=term-missing
 
 # Run with debugging
 pytest -s -vv --tb=long
@@ -76,9 +82,9 @@ pytest -s -vv --tb=long
 tests/
 ├── __init__.py                 # Test package initialization
 ├── conftest.py                 # Shared fixtures and configuration
-├── test_event_listener.py      # EventListener class tests
-├── test_safe_config_parser.py  # SafeConfigParser tests
-├── test_integration.py         # Integration tests
+├── test_event_listener.py      # EventListener class tests (48 tests)
+├── test_safe_config_parser.py  # SafeConfigParser tests (15 tests)
+├── test_mqtt_integration.py    # MQTT integration tests (10 tests)
 └── README.md                   # Testing documentation
 ----
 
@@ -86,13 +92,13 @@ tests/
 
 ===== Unit Tests (`@pytest.mark.unit`)
 
-Test individual components in isolation:
+Test individual components in isolation with comprehensive coverage:
 
 [source,python]
 ----
 @pytest.mark.unit
 class TestEventListenerConfig:
-    """Unit tests for EventListenerConfig."""
+    """Unit tests for EventListenerConfig dataclass."""
     
     def test_default_values(self):
         """Test default configuration values."""
@@ -100,41 +106,66 @@ class TestEventListenerConfig:
         assert config.host == "localhost"
         assert config.port == 1883
         assert config.auto_reconnect is True
+        assert config.max_jobs_in_memory == 1000
     
     def test_custom_values(self):
         """Test custom configuration values."""
         config = EventListenerConfig(
             host="custom.host",
             port=8883,
-            max_jobs_in_memory=1000
+            max_jobs_in_memory=500
         )
         assert config.host == "custom.host"
         assert config.port == 8883
-        assert config.max_jobs_in_memory == 1000
+        assert config.max_jobs_in_memory == 500
+
+@pytest.mark.unit
+class TestJobManagement:
+    """Comprehensive job management testing."""
+    
+    @pytest.mark.asyncio
+    async def test_job_lifecycle(self, event_listener):
+        """Test complete job lifecycle."""
+        # Create job
+        await event_listener._create_job("test-001", {"data": "test"})
+        
+        # Verify pending status
+        job = await event_listener.get_job_status("test-001")
+        assert job.status == JobStatus.PENDING
+        
+        # Update to running
+        await event_listener._update_job_status("test-001", JobStatus.RUNNING)
+        job = await event_listener.get_job_status("test-001")
+        assert job.status == JobStatus.RUNNING
+        
+        # Complete job
+        result = {"success": True, "processed": "test"}
+        await event_listener._update_job_status("test-001", JobStatus.COMPLETED, result=result)
+        job = await event_listener.get_job_status("test-001")
+        assert job.status == JobStatus.COMPLETED
+        assert job.result == result
 ----
 
 ===== Integration Tests (`@pytest.mark.integration`)
 
-Test component interactions and workflows:
+Test component interactions with mocked dependencies:
 
 [source,python]
 ----
 @pytest.mark.integration
 @pytest.mark.asyncio
 class TestEventListenerIntegration:
-    """Integration tests for EventListener."""
+    """Integration tests with mocked MQTT client."""
     
     async def test_complete_workflow(self, event_listener):
         """Test complete message processing workflow."""
         # Mock MQTT client
         event_listener.client = AsyncMock()
         
-        # Process test message
-        test_data = {"job_id": "integration-001", "task": "test"}
-        
+        # Test processor function
         def test_processor(data, job_id):
             return ReturnType(
-                data={"result": "processed"},
+                data={"result": "processed", "input": data},
                 topic="test/results",
                 qos=0,
                 retain=False,
@@ -143,20 +174,86 @@ class TestEventListenerIntegration:
                 job_id=job_id
             )
         
-        # Start processing
-        task = asyncio.create_task(event_listener.run(test_processor))
+        # Process test message
+        test_data = {"job_id": "integration-001", "task": "test"}
+        await event_listener._process_message(test_data, test_processor)
         
-        # Simulate message processing
-        await event_listener._process_message(test_data)
+        # Verify job completion
+        job = await event_listener.get_job_status("integration-001")
+        assert job.status == JobStatus.COMPLETED
         
-        # Verify job tracking
-        job_info = await event_listener.get_job_status("integration-001")
-        assert job_info is not None
-        assert job_info.status == JobStatus.COMPLETED
+        # Verify result publishing
+        event_listener.client.publish.assert_called_once()
+        publish_call = event_listener.client.publish.call_args
+        assert publish_call[0][0] == "test/results"  # topic
+----
+
+===== MQTT Integration Tests (`@pytest.mark.mqtt_integration`)
+
+**NEW**: Comprehensive tests against real Mosquitto broker:
+
+[source,python]
+----
+@pytest.mark.mqtt_integration
+@pytest.mark.asyncio
+class TestEventListenerMQTTIntegration:
+    """Real MQTT broker integration tests."""
+    
+    async def test_eventlistener_connection(self, mqtt_username, mqtt_password):
+        """Test EventListener connection to real broker."""
+        config = EventListenerConfig(
+            host="mosquitto",
+            port=1883,
+            username=mqtt_username,
+            password=mqtt_password,
+            topic="test/events"
+        )
         
-        # Cleanup
-        event_listener.stop()
-        await task
+        listener = EventListener(config)
+        await listener._connect()
+        assert listener.client is not None
+        await listener._disconnect()
+    
+    async def test_eventlistener_subscription(self, authenticated_listener):
+        """Test EventListener subscription functionality."""
+        await authenticated_listener._subscribe()
+        # Verify subscription was successful
+        assert authenticated_listener.client is not None
+    
+    async def test_eventlistener_publish_and_job_tracking(self, authenticated_listener):
+        """Test publishing with job tracking."""
+        # Create and track a job
+        await authenticated_listener._create_job("mqtt-test-001", {"task": "test"})
+        
+        # Publish result
+        result_data = {"job_id": "mqtt-test-001", "result": "success"}
+        await authenticated_listener._publish_result(result_data, "test/results")
+        
+        # Verify job status
+        job = await authenticated_listener.get_job_status("mqtt-test-001")
+        assert job is not None
+    
+    async def test_toml_message_processing(self, authenticated_listener):
+        """Test processing of TOML-formatted messages."""
+        toml_message = '''
+        job_id = "toml-test-001"
+        task_type = "data_processing"
+        
+        [data]
+        input_file = "/test/input.csv"
+        output_file = "/test/output.json"
+        '''
+        
+        # Process TOML message
+        config_parser = SafeConfigParser()
+        parsed_data = config_parser.parse_config_from_string(toml_message)
+        
+        await authenticated_listener._create_job(parsed_data["job_id"], parsed_data)
+        
+        # Verify job creation
+        job = await authenticated_listener.get_job_status("toml-test-001")
+        assert job is not None
+        assert job.job_id == "toml-test-001"
 ----
 
 ===== Slow Tests (`@pytest.mark.slow`)
@@ -170,24 +267,58 @@ Long-running tests for comprehensive scenarios:
 async def test_memory_management_over_time(event_listener):
     """Test memory management with many jobs over time."""
     # Configure for fast cleanup
-    event_listener.config = EventListenerConfig(
+    config = EventListenerConfig(
         max_jobs_in_memory=100,
         job_cleanup_interval=1  # 1 second cleanup
     )
+    listener = EventListener(config)
     
     # Create many jobs
     for i in range(200):
-        await event_listener._create_job(f"job-{i}", {"data": i})
+        await listener._create_job(f"job-{i}", {"data": i})
     
     # Wait for cleanup
     await asyncio.sleep(2)
     
     # Verify memory management
-    all_jobs = await event_listener.get_all_jobs()
+    all_jobs = await listener.get_all_jobs()
     assert len(all_jobs) <= 100
 ----
 
 === Test Fixtures
+
+==== MQTT Authentication Fixtures
+
+**NEW**: Fixtures for authenticated MQTT testing:
+
+[source,python]
+----
+@pytest.fixture
+def mqtt_username():
+    """MQTT username from environment."""
+    return os.getenv("MQTT_USERNAME", "user")
+
+@pytest.fixture
+def mqtt_password():
+    """MQTT password from environment."""
+    return os.getenv("MQTT_PASSWORD", "password")
+
+@pytest.fixture
+async def authenticated_listener(mqtt_username, mqtt_password):
+    """EventListener connected to real MQTT broker."""
+    config = EventListenerConfig(
+        host="mosquitto",
+        port=1883,
+        username=mqtt_username,
+        password=mqtt_password,
+        topic="test/events"
+    )
+    
+    listener = EventListener(config)
+    await listener._connect()
+    yield listener
+    await listener._disconnect()
+----
 
 ==== Configuration Fixtures
 

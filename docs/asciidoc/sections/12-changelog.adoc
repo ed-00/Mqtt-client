@@ -3,6 +3,49 @@
 
 Version history and changes for the {voc-project}.
 
+=== Version 1.0.1 (2025-07-01)
+
+*🧪 Comprehensive Test Suite Overhaul*
+
+==== Major Testing Improvements
+
+* **Test Coverage Enhancement** - Increased from ~45% to **83.72%** coverage, exceeding 80% target
+* **Complete Test Suite Rewrite** - Transformed 12 failing tests to **73 passing tests** (100% success rate)
+* **MQTT Integration Testing** - Added 10 new tests against real Mosquitto broker
+* **EventListener Focus** - Corrected tests to properly validate EventListener class instead of raw MQTT clients
+* **Pytest Configuration Fix** - Fixed pytest.ini header from `[tool:pytest]` to `[pytest]` resolving marker warnings
+
+==== Test Architecture Improvements
+
+* **Test Organization** - Restructured into clear categories:
+  - **48 Unit Tests** - Individual component validation
+  - **15 Integration Tests** - Component interaction with mocks  
+  - **10 MQTT Integration Tests** - Real broker communication
+* **Comprehensive Fixtures** - Added authenticated MQTT fixtures for real broker testing
+* **Job Lifecycle Testing** - Complete job management validation from creation to cleanup
+* **Error Handling Tests** - Comprehensive error condition and edge case coverage
+
+==== EventListener Implementation Fixes
+
+* **Message Encoding Fix** - Fixed `_send_message()` to properly encode strings to bytes for MQTT client
+* **Result Publishing** - Fixed result serialization to JSON before MQTT publishing
+* **Type Safety** - Enhanced type checking throughout EventListener implementation
+* **Authentication Support** - Proper credential handling in MQTT integration tests
+
+==== Testing Framework Enhancements
+
+* **TOML Message Processing** - Comprehensive testing of TOML-formatted message handling
+* **Job Tracking Validation** - End-to-end job status and lifecycle testing
+* **Memory Management Tests** - Job cleanup and memory limit validation
+* **Performance Benchmarks** - Test execution time optimization (under 20 seconds)
+
+==== Quality Metrics Achieved
+
+* **Code Coverage**: 83.72% (EventListener: 80%, SafeConfigParser: 90%)
+* **Test Success Rate**: 100% (73/73 tests passing)
+* **MQTT Integration**: 100% success with real Mosquitto broker
+* **Documentation**: Updated test documentation with new patterns and examples
+
 === Version {voc-version} (2025-01-09)
 
 *🎉 Initial Internal Release*

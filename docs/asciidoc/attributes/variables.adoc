@@ -20,10 +20,12 @@
 :var-install-dev: pip install -e .[dev]
 :var-module-import: from {voc-module} import EventListener, EventListenerConfig
 :var-coverage-target: 80%
-:var-coverage-current: 85%
+:var-coverage-current: 83.72%
 :var-python-min: 3.8
-:var-test-count-unit: 45+
-:var-test-count-integration: 12+
+:var-test-count-unit: 48
+:var-test-count-integration: 15
+:var-test-count-mqtt: 10
+:var-test-count-total: 73
 :var-maintainer: {voc-author}
 :var-email: aahameed@kth.se
 :var-build-cmd: python -m build

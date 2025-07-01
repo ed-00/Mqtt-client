@@ -5,7 +5,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     bash \
     git \
     mosquitto-clients \
-    && rm -rf /var/lib/apt/lists/*
+    ruby \
+    ruby-dev \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/* \
+    && gem install asciidoctor asciidoctor-pdf
 
 COPY requirements.txt .
 
