@@ -1,0 +1,156 @@
+[[installation]]
+== Installation Guide
+
+This section covers all installation methods for the {voc-project}.
+
+=== Prerequisites
+
+[cols="1,2,1"]
+|===
+|Requirement |Description |Version
+
+|Python |Python programming language |{var-python-min}+
+|Git |Version control system |2.20+
+|Network Access |Access to internal repositories |Required
+|===
+
+=== Installation Methods
+
+==== Method 1: Direct from Repository (Recommended)
+
+Install the latest version directly from the git repository:
+
+[source,bash,subs="attributes"]
+----
+# Latest version from main branch
+{var-install-cmd}
+
+# Specific version tag
+{var-install-version}
+
+# From develop branch
+pip install git+{link-repo}.git@develop
+----
+
+==== Method 2: Local Clone
+
+For development or when you need the full repository:
+
+[source,bash,subs="attributes"]
+----
+# Clone repository
+git clone {link-repo}.git
+cd Mqtt-client
+
+# Install package
+pip install .
+
+# Install in editable mode for development
+{var-install-dev}
+----
+
+==== Method 3: Wheel Distribution
+
+If you have a wheel file distributed internally:
+
+[source,bash,subs="attributes"]
+----
+# Install from wheel file
+pip install {voc-python-package}-{voc-version}-py3-none-any.whl
+----
+
+=== Verification
+
+Verify the installation was successful:
+
+[source,python,subs="attributes"]
+----
+{var-module-import}
+
+# Check version
+print(f"Installed version: {{EventListener.__version__}}")
+
+# Quick functionality test
+config = EventListenerConfig()
+print("✅ Installation successful!")
+----
+
+=== Development Installation
+
+For contributors and developers:
+
+[source,bash,subs="attributes"]
+----
+# Clone repository
+git clone {link-repo}.git
+cd Mqtt-client
+
+# Install development dependencies
+{var-install-dev}
+
+# Verify development setup
+{var-test-cmd}
+----
+
+Development installation includes:
+
+* Testing frameworks (pytest, pytest-asyncio, pytest-cov)
+* Code quality tools (flake8, bandit, safety)
+* Documentation tools (if needed)
+
+=== Requirements Integration
+
+For projects depending on this library, add to your `requirements.txt`:
+
+[source,text,subs="attributes"]
+----
+# Latest version
+git+{link-repo}.git
+
+# Specific version
+git+{link-repo}.git@v{voc-version}
+
+# Development branch
+git+{link-repo}.git@develop
+----
+
+=== Troubleshooting Installation
+
+==== Common Issues
+
+*Git Authentication*::
+Ensure you have access to the repository. Contact your administrator if you receive authentication errors.
+
+*Python Version*::
+Verify you're using Python {var-python-min} or later:
++
+[source,bash]
+----
+python --version
+----
+
+*Network Access*::
+Ensure you can access the internal git repository. Test with:
++
+[source,bash,subs="attributes"]
+----
+git ls-remote {link-repo}.git
+----
+
+*Dependency Conflicts*::
+If you encounter dependency conflicts, consider using a virtual environment:
++
+[source,bash]
+----
+python -m venv mqtt-env
+source mqtt-env/bin/activate  # On Windows: mqtt-env\Scripts\activate
+pip install git+{link-repo}.git
+----
+
+==== Getting Help
+
+If you encounter installation issues:
+
+1. Check the link:{link-issues}[issue tracker] for known problems
+2. Contact the maintainer: {var-email}
+3. Review the link:{link-internal-dist}[Internal Distribution Guide] 

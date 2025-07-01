@@ -1,0 +1,608 @@
+[[troubleshooting]]
+== Troubleshooting Guide
+
+Common issues and solutions for the {voc-project}.
+
+=== Installation Issues
+
+==== Git Authentication Errors
+
+*Problem:* Cannot clone repository or install from git.
+
+*Symptoms:*
+[source,text]
+----
+fatal: Authentication failed
+Permission denied (publickey)
+----
+
+*Solutions:*
+
+. **Check repository access:**
++
+[source,bash,subs="attributes"]
+----
+git ls-remote {link-repo}.git
+----
+
+. **Configure Git credentials:**
++
+[source,bash]
+----
+git config --global user.name "Your Name"
+git config --global user.email "your.email@example.com"
+----
+
+. **Use SSH key authentication:**
++
+[source,bash]
+----
+ssh-keygen -t rsa -b 4096 -C "your.email@example.com"
+# Add public key to your Git provider
+----
+
+. **Contact your administrator** for repository access
+
+==== Python Version Issues
+
+*Problem:* Installation fails due to Python version incompatibility.
+
+*Symptoms:*
+[source,text]
+----
+ERROR: Package requires Python '>=3.8' but the running Python is 3.7
+----
+
+*Solutions:*
+
+. **Check Python version:**
++
+[source,bash]
+----
+python --version
+python3 --version
+----
+
+. **Use Python {var-python-min} or later:**
++
+[source,bash]
+----
+# Install Python 3.8+ using package manager
+sudo apt update && sudo apt install python3.8
+
+# Or use pyenv
+pyenv install 3.8.10
+pyenv local 3.8.10
+----
+
+. **Use virtual environment:**
++
+[source,bash]
+----
+python3.8 -m venv mqtt-env
+source mqtt-env/bin/activate
+pip install git+{link-repo}.git
+----
+
+==== Dependency Conflicts
+
+*Problem:* Package installation fails due to dependency conflicts.
+
+*Symptoms:*
+[source,text]
+----
+ERROR: pip's dependency resolver does not currently consider pre-releases
+ResolutionImpossible: for help visit https://pip.pypa.io/en/stable/...
+----
+
+*Solutions:*
+
+. **Use clean virtual environment:**
++
+[source,bash]
+----
+python -m venv clean-env
+source clean-env/bin/activate
+pip install --upgrade pip
+pip install git+{link-repo}.git
+----
+
+. **Install with no dependencies first:**
++
+[source,bash]
+----
+pip install --no-deps git+{link-repo}.git
+pip install -r requirements.txt
+----
+
+. **Check for conflicting packages:**
++
+[source,bash]
+----
+pip check
+pip list --outdated
+----
+
+=== Connection Issues
+
+==== MQTT Broker Connection Failures
+
+*Problem:* Cannot connect to MQTT broker.
+
+*Symptoms:*
+[source,text]
+----
+ConnectionError: [Errno 111] Connection refused
+TimeoutError: Connection timeout
+----
+
+*Solutions:*
+
+. **Verify broker connectivity:**
++
+[source,bash]
+----
+# Test network connectivity
+ping mqtt-broker-host
+
+# Test port connectivity
+telnet mqtt-broker-host 1883
+nc -zv mqtt-broker-host 1883
+----
+
+. **Check configuration:**
++
+[source,python]
+----
+config = EventListenerConfig(
+    host="correct-host",
+    port=1883,  # or 8883 for SSL
+    username="valid-username",
+    password="valid-password"
+)
+----
+
+. **Enable debug logging:**
++
+[source,python]
+----
+import logging
+logging.basicConfig(level=logging.DEBUG)
+logging.getLogger('amqtt.client').setLevel(logging.DEBUG)
+----
+
+. **Test with MQTT client tools:**
++
+[source,bash]
+----
+# Install mosquitto-clients
+sudo apt install mosquitto-clients
+
+# Test connection
+mosquitto_sub -h mqtt-host -p 1883 -t test/topic -u username -P password
+----
+
+==== SSL/TLS Connection Issues
+
+*Problem:* SSL connection fails or certificate errors.
+
+*Symptoms:*
+[source,text]
+----
+SSL: CERTIFICATE_VERIFY_FAILED
+ssl.SSLError: [SSL: WRONG_VERSION_NUMBER]
+----
+
+*Solutions:*
+
+. **Verify SSL configuration:**
++
+[source,python]
+----
+config = EventListenerConfig(
+    host="ssl-broker",
+    port=8883,  # SSL port
+    cafile="/path/to/ca.crt",
+    # or
+    cadata="-----BEGIN CERTIFICATE-----..."
+)
+----
+
+. **Check certificate validity:**
++
+[source,bash]
+----
+openssl s_client -connect ssl-broker:8883 -servername ssl-broker
+openssl x509 -in ca.crt -text -noout
+----
+
+. **Disable certificate verification (testing only):**
++
+[source,python]
+----
+import ssl
+config = EventListenerConfig(
+    host="ssl-broker",
+    port=8883,
+    tls_context=ssl.create_default_context()
+)
+config.tls_context.check_hostname = False
+config.tls_context.verify_mode = ssl.CERT_NONE
+----
+
+==== Network Timeout Issues
+
+*Problem:* Connection timeouts or intermittent disconnections.
+
+*Solutions:*
+
+. **Adjust timeout settings:**
++
+[source,python]
+----
+config = EventListenerConfig(
+    keep_alive=60,
+    reconnect_retries=10,
+    reconnect_max_interval=60,
+    auto_reconnect=True
+)
+----
+
+. **Check network stability:**
++
+[source,bash]
+----
+# Monitor network connectivity
+ping -c 10 mqtt-broker-host
+
+# Check for packet loss
+mtr mqtt-broker-host
+----
+
+. **Use connection monitoring:**
++
+[source,python]
+----
+import asyncio
+
+async def monitor_connection(listener):
+    while True:
+        if listener.client and listener.client.is_connected():
+            print("✅ Connected")
+        else:
+            print("❌ Disconnected")
+        await asyncio.sleep(30)
+----
+
+=== Runtime Issues
+
+==== Memory Issues
+
+*Problem:* High memory usage or memory leaks.
+
+*Symptoms:*
+[source,text]
+----
+MemoryError: Unable to allocate memory
+Process killed (OOM killer)
+----
+
+*Solutions:*
+
+. **Reduce job memory limit:**
++
+[source,python]
+----
+config = EventListenerConfig(
+    max_jobs_in_memory=1000,  # Reduce from default 5000
+    job_cleanup_interval=600  # More frequent cleanup
+)
+----
+
+. **Monitor memory usage:**
++
+[source,python]
+----
+import psutil
+
+def monitor_memory():
+    process = psutil.Process()
+    memory_mb = process.memory_info().rss / 1024 / 1024
+    print(f"Memory usage: {memory_mb:.1f} MB")
+
+# Call periodically
+asyncio.create_task(periodic_memory_check())
+----
+
+. **Manual cleanup:**
++
+[source,python]
+----
+# Cleanup old jobs manually
+await listener.cleanup_old_jobs()
+
+# Force garbage collection
+import gc
+gc.collect()
+----
+
+==== Performance Issues
+
+*Problem:* Slow message processing or high latency.
+
+*Solutions:*
+
+. **Profile message processing:**
++
+[source,python]
+----
+import time
+
+def timed_processor(data, job_id):
+    start_time = time.time()
+    result = your_processing_logic(data, job_id)
+    end_time = time.time()
+    
+    processing_time = end_time - start_time
+    if processing_time > 1.0:  # Log slow operations
+        print(f"Slow processing for {job_id}: {processing_time:.2f}s")
+    
+    return result
+----
+
+. **Optimize configuration:**
++
+[source,python]
+----
+config = EventListenerConfig(
+    qos=0,  # Faster delivery for non-critical messages
+    duplicate_action="skip",  # Avoid reprocessing
+    job_cleanup_interval=300  # More frequent cleanup
+)
+----
+
+. **Use async operations:**
++
+[source,python]
+----
+async def async_processor(data, job_id):
+    # Use async operations for I/O
+    async with aiohttp.ClientSession() as session:
+        result = await session.get(api_url)
+    return create_return_type(result, "results", job_id)
+----
+
+==== Job Processing Errors
+
+*Problem:* Jobs fail or get stuck in processing.
+
+*Solutions:*
+
+. **Add comprehensive error handling:**
++
+[source,python]
+----
+def robust_processor(data, job_id):
+    try:
+        return process_data(data, job_id)
+    except ValueError as e:
+        logger.error(f"Validation error for {job_id}: {e}")
+        return create_error_response(job_id, "validation", str(e))
+    except Exception as e:
+        logger.exception(f"Unexpected error for {job_id}")
+        return create_error_response(job_id, "processing", str(e))
+----
+
+. **Monitor job status:**
++
+[source,python]
+----
+async def monitor_jobs(listener):
+    running_jobs = await listener.get_running_jobs()
+    for job_id, job_info in running_jobs.items():
+        age = datetime.now() - job_info.started_at
+        if age.total_seconds() > 300:  # 5 minutes
+            print(f"⚠️ Long-running job: {job_id}")
+----
+
+. **Check job queue health:**
++
+[source,python]
+----
+all_jobs = await listener.get_all_jobs()
+running = await listener.get_running_jobs()
+completed = await listener.get_completed_jobs()
+failed = len([j for j in all_jobs.values() if j.status == JobStatus.FAILED])
+
+print(f"Jobs - Total: {len(all_jobs)}, Running: {len(running)}, "
+      f"Completed: {len(completed)}, Failed: {failed}")
+----
+
+=== Configuration Issues
+
+==== Invalid Configuration
+
+*Problem:* Configuration validation errors.
+
+*Symptoms:*
+[source,text]
+----
+ValueError: Invalid port number: -1
+ConfigError: Invalid QoS value: 5
+----
+
+*Solutions:*
+
+. **Validate configuration values:**
++
+[source,python]
+----
+# Valid port range
+config = EventListenerConfig(port=1883)  # 1-65535
+
+# Valid QoS values
+config = EventListenerConfig(qos=1)  # 0, 1, or 2
+
+# Valid host format
+config = EventListenerConfig(host="mqtt.example.com")
+----
+
+. **Check environment variables:**
++
+[source,python]
+----
+import os
+
+def validate_env_config():
+    required_vars = ["MQTT_HOST", "MQTT_USERNAME", "MQTT_PASSWORD"]
+    missing = [var for var in required_vars if not os.getenv(var)]
+    if missing:
+        raise ValueError(f"Missing environment variables: {missing}")
+----
+
+==== TOML Parsing Errors
+
+*Problem:* Cannot parse TOML message content.
+
+*Symptoms:*
+[source,text]
+----
+ConfigError: Invalid TOML syntax
+TOMLDecodeError: Expected '=' after key
+----
+
+*Solutions:*
+
+. **Validate TOML format:**
++
+[source,python]
+----
+import toml
+
+def validate_toml_message(message_str):
+    try:
+        data = toml.loads(message_str)
+        return data
+    except toml.TomlDecodeError as e:
+        print(f"TOML error: {e}")
+        return None
+----
+
+. **Check message format:**
++
+[source,toml]
+----
+# Correct TOML format
+job_id = "task-001"
+task_type = "processing"
+
+[data]
+input = "file.txt"
+output = "result.txt"
+----
+
+. **Use SafeConfigParser:**
++
+[source,python]
+----
+from Listener import SafeConfigParser
+
+parser = SafeConfigParser()
+try:
+    data = parser.parse_config_from_string(toml_string)
+except ConfigError as e:
+    print(f"Parse error: {e}")
+----
+
+=== Debugging Tools
+
+==== Enable Debug Logging
+
+[source,python]
+----
+import logging
+
+# Enable all debug logging
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+
+# Specific logger levels
+logging.getLogger('Listener').setLevel(logging.DEBUG)
+logging.getLogger('amqtt.client').setLevel(logging.DEBUG)
+logging.getLogger('amqtt.broker').setLevel(logging.INFO)
+----
+
+==== Connection Testing
+
+[source,python]
+----
+async def test_connection(config):
+    """Test MQTT connection independently."""
+    from amqtt.client import MQTTClient
+    
+    client = MQTTClient()
+    try:
+        await client.connect(config.uri)
+        print("✅ Connection successful")
+        await client.disconnect()
+    except Exception as e:
+        print(f"❌ Connection failed: {e}")
+----
+
+==== Message Monitoring
+
+[source,python]
+----
+def debug_processor(data, job_id):
+    """Processor with extensive debugging."""
+    print(f"📨 Received job {job_id}")
+    print(f"📋 Data: {data}")
+    print(f"🔧 Processing...")
+    
+    try:
+        result = your_processing_logic(data, job_id)
+        print(f"✅ Job {job_id} completed")
+        return result
+    except Exception as e:
+        print(f"❌ Job {job_id} failed: {e}")
+        raise
+----
+
+=== Getting Help
+
+==== Before Seeking Help
+
+. **Check logs** for error messages and stack traces
+. **Verify configuration** against documentation
+. **Test connectivity** to MQTT broker
+. **Check system resources** (memory, CPU, network)
+. **Review recent changes** that might have caused issues
+
+==== Support Channels
+
+. **Repository Issues**: Check link:{link-issues}[GitHub issues] for known problems
+. **Internal Documentation**: Review link:{link-internal-dist}[Internal Distribution Guide]
+. **Maintainer Contact**: Email {var-email} for direct support
+. **Team Resources**: Contact your internal team or administrator
+
+==== Information to Include
+
+When reporting issues, include:
+
+* **Version information** (library version, Python version)
+* **Configuration** (sanitized, remove credentials)
+* **Error messages** (full stack trace)
+* **Environment details** (OS, network setup)
+* **Steps to reproduce** the issue
+* **Expected vs actual behavior**
+
+[source,bash]
+----
+# Gather system information
+python --version
+pip show mqtt-event-listener
+uname -a
+netstat -an | grep :1883
+---- 

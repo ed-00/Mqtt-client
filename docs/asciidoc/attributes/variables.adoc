@@ -13,4 +13,20 @@
 :var-perl-minver: v5.32
 :var-perl-version-minver: 0.77
 //-----------------------------------------------------------------------
+// Variables  
+// ---------
+:var-install-cmd: pip install git+{link-repo}.git
+:var-install-version: pip install git+{link-repo}.git@v{voc-version}
+:var-install-dev: pip install -e .[dev]
+:var-module-import: from {voc-module} import EventListener, EventListenerConfig
+:var-coverage-target: 80%
+:var-coverage-current: 85%
+:var-python-min: 3.8
+:var-test-count-unit: 45+
+:var-test-count-integration: 12+
+:var-maintainer: {voc-author}
+:var-email: aahameed@kth.se
+:var-build-cmd: python -m build
+:var-test-cmd: make test
+//-----------------------------------------------------------------------
 // NB!! LAST LINE OF FILE 

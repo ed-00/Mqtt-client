@@ -1,0 +1,569 @@
+[[api-reference]]
+== API Reference
+
+Complete API documentation for the {voc-project}.
+
+=== Core Classes
+
+==== EventListener
+
+The main class for MQTT event listening with job tracking.
+
+[source,python]
+----
+class EventListener:
+    """MQTT Event Listener with job tracking capabilities."""
+----
+
+===== Constructor
+
+[source,python]
+----
+def __init__(self, config: EventListenerConfig, 
+             config_parser: Optional[SafeConfigParser] = None) -> None
+----
+
+*Parameters:*
+
+* `config` (EventListenerConfig): Configuration object containing all settings
+* `config_parser` (Optional[SafeConfigParser]): Custom config parser instance
+
+*Example:*
+
+[source,python]
+----
+config = EventListenerConfig(host="localhost", topic="events")
+listener = EventListener(config)
+----
+
+===== Methods
+
+====== run()
+
+[source,python]
+----
+async def run(self, func: Callable[[Dict[str, Any], str], 
+              Optional[ReturnType]]) -> None
+----
+
+Start the event listener and process incoming messages.
+
+*Parameters:*
+
+* `func`: Message processing function that takes (data, job_id) and returns Optional[ReturnType]
+
+*Example:*
+
+[source,python]
+----
+def my_processor(data, job_id):
+    return ReturnType(data=result, topic="results", ...)
+
+await listener.run(my_processor)
+----
+
+====== stop()
+
+[source,python]
+----
+def stop() -> None
+----
+
+Stop the event listener gracefully.
+
+*Example:*
+
+[source,python]
+----
+listener.stop()
+----
+
+====== Job Management Methods
+
+[source,python]
+----
+async def get_job_status(self, job_id: str) -> Optional[JobInfo]
+async def is_job_completed(self, job_id: str) -> bool
+async def is_job_running(self, job_id: str) -> bool  
+async def job_exists(self, job_id: str) -> bool
+async def get_all_jobs(self) -> Dict[str, JobInfo]
+async def get_running_jobs(self) -> Dict[str, JobInfo]
+async def get_completed_jobs(self) -> Dict[str, JobInfo]
+async def get_duplicate_jobs(self) -> Dict[str, JobInfo]
+async def cleanup_old_jobs(self) -> None
+----
+
+*Job Status Methods:*
+
+[cols="1,3,1"]
+|===
+|Method |Description |Return Type
+
+|`get_job_status()` |Get detailed job information |`Optional[JobInfo]`
+|`is_job_completed()` |Check if job is completed |`bool`
+|`is_job_running()` |Check if job is currently running |`bool`
+|`job_exists()` |Check if job exists in memory |`bool`
+|===
+
+*Job Query Methods:*
+
+[cols="1,3,1"]
+|===
+|Method |Description |Return Type
+
+|`get_all_jobs()` |Get all jobs in memory |`Dict[str, JobInfo]`
+|`get_running_jobs()` |Get only running jobs |`Dict[str, JobInfo]`
+|`get_completed_jobs()` |Get only completed jobs |`Dict[str, JobInfo]`
+|`get_duplicate_jobs()` |Get jobs marked as duplicates |`Dict[str, JobInfo]`
+|===
+
+*Maintenance Methods:*
+
+[cols="1,3"]
+|===
+|Method |Description
+
+|`cleanup_old_jobs()` |Remove old completed jobs from memory
+|===
+
+*Examples:*
+
+[source,python]
+----
+# Check job status
+job_info = await listener.get_job_status("job-123")
+if job_info and job_info.status == JobStatus.COMPLETED:
+    print(f"Job completed with result: {job_info.result}")
+
+# Get running jobs count
+running = await listener.get_running_jobs()
+print(f"Currently running: {len(running)} jobs")
+
+# Cleanup old jobs
+await listener.cleanup_old_jobs()
+----
+
+==== EventListenerConfig
+
+Configuration dataclass for the EventListener.
+
+[source,python]
+----
+@dataclass(frozen=True)
+class EventListenerConfig:
+    """Unified configuration for the MQTT Event Listener."""
+----
+
+===== Configuration Parameters
+
+====== Connection Settings
+
+[cols="1,2,1,2"]
+|===
+|Parameter |Type |Default |Description
+
+|`host` |`str` |`"localhost"` |MQTT broker hostname
+|`port` |`int` |`1883` |MQTT broker port
+|`client_id` |`str` |`"event-listener"` |Unique client identifier
+|`username` |`str` |`"test"` |Authentication username
+|`password` |`str` |`"test"` |Authentication password
+|`uri` |`str` |`"mqtt://localhost:1883"` |Complete MQTT URI
+|===
+
+====== SSL/TLS Settings
+
+[cols="1,2,1,2"]
+|===
+|Parameter |Type |Default |Description
+
+|`cafile` |`Optional[str]` |`None` |CA certificate file path
+|`capath` |`Optional[str]` |`None` |CA certificate directory
+|`cadata` |`Optional[str]` |`None` |CA certificate data
+|`additional_headers` |`Optional[Dict]` |`None` |Additional HTTP headers
+|===
+
+====== MQTT Client Settings
+
+[cols="1,2,1,2"]
+|===
+|Parameter |Type |Default |Description
+
+|`keep_alive` |`int` |`10` |Keep-alive interval (seconds)
+|`ping_delay` |`int` |`1` |Ping delay (seconds)
+|`default_qos` |`int` |`0` |Default Quality of Service
+|`default_retain` |`bool` |`False` |Default retain flag
+|`auto_reconnect` |`bool` |`True` |Automatic reconnection
+|`connect_timeout` |`Optional[int]` |`None` |Connection timeout
+|`reconnect_retries` |`int` |`2` |Reconnection attempts
+|`reconnect_max_interval` |`int` |`10` |Max reconnect interval
+|`cleansession` |`bool` |`True` |Clean session flag
+|===
+
+====== Topic Settings
+
+[cols="1,2,1,2"]
+|===
+|Parameter |Type |Default |Description
+
+|`topic` |`str` |`"test"` |Primary subscription topic
+|`qos` |`int` |`0` |Quality of Service level
+|`retain` |`bool` |`False` |Retain message flag
+|`error_topic` |`str` |`"test/error"` |Error message topic
+|`log_topic` |`str` |`"test/log"` |Log message topic
+|`results_topic` |`str` |`"test/results"` |Result message topic
+|===
+
+====== Advanced Settings
+
+[cols="1,2,1,2"]
+|===
+|Parameter |Type |Default |Description
+
+|`will` |`Optional[Dict]` |`None` |Will message configuration
+|`custom_topics` |`Dict[str, Dict]` |`{}` |Custom topic configurations
+|===
+
+====== Job Tracking Settings
+
+[cols="1,2,1,2"]
+|===
+|Parameter |Type |Default |Description
+
+|`max_jobs_in_memory` |`int` |`5000` |Maximum jobs in memory
+|`job_cleanup_interval` |`int` |`259200` |Cleanup interval (seconds)
+|`job_id_field` |`str` |`"job_id"` |TOML field for job ID
+|`allow_job_id_generation` |`bool` |`False` |Auto-generate job IDs
+|`duplicate_action` |`str` |`"skip"` |Duplicate job handling
+|===
+
+*Example:*
+
+[source,python]
+----
+config = EventListenerConfig(
+    host="mqtt.example.com",
+    port=8883,
+    topic="events/+",
+    auto_reconnect=True,
+    max_jobs_in_memory=10000,
+    job_cleanup_interval=3600
+)
+----
+
+==== JobInfo
+
+Information about a job execution.
+
+[source,python]
+----
+@dataclass
+class JobInfo:
+    """Information about a job run."""
+----
+
+===== Attributes
+
+[cols="1,2,2"]
+|===
+|Attribute |Type |Description
+
+|`job_id` |`str` |Unique identifier for the job
+|`status` |`JobStatus` |Current status of the job
+|`started_at` |`datetime` |When the job was created
+|`completed_at` |`Optional[datetime]` |When the job completed
+|`input_data` |`Optional[Dict[str, Any]]` |Input data for the job
+|`result` |`Optional[Any]` |Result returned by job function
+|`error` |`Optional[str]` |Error message if job failed
+|===
+
+*Example:*
+
+[source,python]
+----
+job_info = await listener.get_job_status("job-123")
+if job_info:
+    print(f"Job ID: {job_info.job_id}")
+    print(f"Status: {job_info.status}")
+    print(f"Started: {job_info.started_at}")
+    if job_info.result:
+        print(f"Result: {job_info.result}")
+----
+
+==== ReturnType
+
+Return type for processed messages.
+
+[source,python]
+----
+@dataclass
+class ReturnType:
+    """Return type for processed messages."""
+----
+
+===== Attributes
+
+[cols="1,2,2"]
+|===
+|Attribute |Type |Description
+
+|`data` |`Dict[str, Any]` |Processed data to publish
+|`topic` |`str` |MQTT topic for publication
+|`qos` |`int` |Quality of Service level
+|`retain` |`bool` |Retain message flag
+|`message_id` |`int` |Unique message identifier
+|`timestamp` |`datetime` |Processing timestamp
+|`job_id` |`str` |Associated job ID
+|===
+
+*Example:*
+
+[source,python]
+----
+def my_processor(data, job_id):
+    result = {"status": "processed", "data": data}
+    
+    return ReturnType(
+        data=result,
+        topic="results/processed",
+        qos=1,
+        retain=False,
+        message_id=int(time.time()),
+        timestamp=datetime.now(),
+        job_id=job_id
+    )
+----
+
+==== SafeConfigParser
+
+Safe TOML configuration parser with error handling.
+
+[source,python]
+----
+class SafeConfigParser:
+    """Safe TOML configuration parser."""
+----
+
+===== Constructor
+
+[source,python]
+----
+def __init__(self, logger: Optional[logging.Logger] = None) -> None
+----
+
+*Parameters:*
+
+* `logger` (Optional[logging.Logger]): Logger instance for error reporting
+
+===== Methods
+
+[source,python]
+----
+def parse_config_from_dict(self, config_dict: Dict[str, Any]) -> Dict[str, Any]
+def parse_config_from_string(self, config_string: str) -> Dict[str, Any]
+def parse_config_from_file(self, file_path: str) -> Dict[str, Any]
+def validate_config(self, config: Dict[str, Any]) -> bool
+----
+
+*Examples:*
+
+[source,python]
+----
+import logging
+from Listener import SafeConfigParser
+
+logger = logging.getLogger(__name__)
+parser = SafeConfigParser(logger)
+
+# Parse from string
+config_data = parser.parse_config_from_string(toml_string)
+
+# Parse from file
+config_data = parser.parse_config_from_file("config.toml")
+
+# Validate configuration
+is_valid = parser.validate_config(config_data)
+----
+
+=== Enumerations
+
+==== JobStatus
+
+Job execution status enumeration.
+
+[source,python]
+----
+class JobStatus(Enum):
+    """Job execution status enumeration."""
+    
+    PENDING = "pending"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    DUPLICATE = "duplicate"
+----
+
+===== Status Values
+
+[cols="1,3"]
+|===
+|Status |Description
+
+|`PENDING` |Job is queued but not yet started
+|`RUNNING` |Job is currently being processed
+|`COMPLETED` |Job has completed successfully
+|`FAILED` |Job has failed with an error
+|`DUPLICATE` |Job was detected as a duplicate
+|===
+
+*Example:*
+
+[source,python]
+----
+from Listener import JobStatus
+
+# Check job status
+job_info = await listener.get_job_status("job-123")
+if job_info.status == JobStatus.COMPLETED:
+    print("Job completed successfully")
+elif job_info.status == JobStatus.FAILED:
+    print(f"Job failed: {job_info.error}")
+----
+
+=== Exceptions
+
+==== ConfigError
+
+Raised when configuration parsing or validation fails.
+
+[source,python]
+----
+class ConfigError(Exception):
+    """Configuration error exception."""
+----
+
+*Example:*
+
+[source,python]
+----
+from Listener import ConfigError
+
+try:
+    parser = SafeConfigParser()
+    config = parser.parse_config_from_file("invalid.toml")
+except ConfigError as e:
+    print(f"Configuration error: {e}")
+----
+
+=== Utility Functions
+
+==== Helper Functions
+
+These utility functions can help with common tasks:
+
+[source,python]
+----
+def create_return_type(data: Dict[str, Any], topic: str, 
+                      job_id: str, qos: int = 0, 
+                      retain: bool = False) -> ReturnType:
+    """Helper to create ReturnType instances."""
+    return ReturnType(
+        data=data,
+        topic=topic,
+        qos=qos,
+        retain=retain,
+        message_id=int(time.time()),
+        timestamp=datetime.now(),
+        job_id=job_id
+    )
+
+def create_error_result(job_id: str, error_message: str, 
+                       error_type: str = "processing_error") -> ReturnType:
+    """Helper to create error result."""
+    return create_return_type(
+        data={
+            "job_id": job_id,
+            "status": "error",
+            "error_type": error_type,
+            "error_message": error_message,
+            "timestamp": datetime.now().isoformat()
+        },
+        topic="errors",
+        job_id=job_id,
+        qos=1
+    )
+----
+
+=== Message Processing Function Signature
+
+Your message processing function must follow this signature:
+
+[source,python]
+----
+def processor(data: Dict[str, Any], job_id: str) -> Optional[ReturnType]:
+    """
+    Process an incoming MQTT message.
+    
+    Args:
+        data: Parsed TOML data as dictionary
+        job_id: Unique job identifier
+    
+    Returns:
+        Optional[ReturnType]: Result to publish, or None for no response
+    """
+    pass
+----
+
+Or for async processing:
+
+[source,python]
+----
+async def async_processor(data: Dict[str, Any], 
+                         job_id: str) -> Optional[ReturnType]:
+    """
+    Process an incoming MQTT message asynchronously.
+    
+    Args:
+        data: Parsed TOML data as dictionary
+        job_id: Unique job identifier
+    
+    Returns:
+        Optional[ReturnType]: Result to publish, or None for no response
+    """
+    pass
+----
+
+=== Type Hints
+
+The library includes comprehensive type hints for better IDE support:
+
+[source,python]
+----
+from typing import Dict, Any, Optional, Callable
+from datetime import datetime
+from Listener import EventListener, EventListenerConfig, ReturnType
+
+# Function type for message processors
+ProcessorFunc = Callable[[Dict[str, Any], str], Optional[ReturnType]]
+
+# Example with proper typing
+def typed_processor(data: Dict[str, Any], job_id: str) -> Optional[ReturnType]:
+    # Type-safe processing
+    task_type: str = data.get("task_type", "unknown")
+    priority: int = data.get("priority", 1)
+    
+    result: Dict[str, Any] = {
+        "job_id": job_id,
+        "task_type": task_type,
+        "status": "completed"
+    }
+    
+    return ReturnType(
+        data=result,
+        topic="results",
+        qos=0,
+        retain=False,
+        message_id=1,
+        timestamp=datetime.now(),
+        job_id=job_id
+    )
+---- 

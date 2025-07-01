@@ -1,16 +1,19 @@
 // NB!! THIS FILE MAY NOT INCLUDE BLANK LINES!
 //-----------------------------------------------------------------------
-// Links and URIs
-// --------------
-// SBTal
+// Links
 // -----
-:uri-sbtal: https://www.sprakbanken.speech.kth.se/ 
-:link-sbtal: link:{uri-sbtal}[{voc-sbtal}]
-:link-sbtal-long: link:{uri-sbtal}[{voc-sbtal-long}]
-// KTH
-// ---
-:uri-kth: https://www.kth.se/
-:link-kth: link:{uri-kth}[{voc-kth}]
-:link-kth-long: link:{uri-kth}[{voc-kth-long}]
+:link-repo: https://github.com/ed-00/Mqtt-client
+:link-docs: {link-repo}/tree/main/docs
+:link-readme: {link-repo}/blob/main/README.md
+:link-license: {link-repo}/blob/main/LICENSE
+:link-pyproject: {link-repo}/blob/main/pyproject.toml
+:link-issues: {link-repo}/issues
+:link-releases: {link-repo}/releases
+:link-internal-dist: {link-repo}/blob/main/INTERNAL_DISTRIBUTION.md
+:link-mqtt: https://mqtt.org/
+:link-toml: https://toml.io/
+:link-asyncio: https://docs.python.org/3/library/asyncio.html
+:link-pytest: https://docs.pytest.org/
+:link-apache-license: https://www.apache.org/licenses/LICENSE-2.0
 //-----------------------------------------------------------------------
 // NB!! LAST LINE OF FILE 

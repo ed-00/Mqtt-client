@@ -1,0 +1,507 @@
+[[performance]]
+== Performance Guide
+
+Performance characteristics and optimization guidelines for the {voc-project}.
+
+=== Performance Metrics
+
+==== Baseline Performance
+
+[cols="1,2,1,1"]
+|===
+|Metric |Description |Typical Value |Target
+
+|**Throughput** |Messages processed per second |100-1000 msg/s |>100 msg/s
+|**Latency** |Message processing delay |<100ms |<500ms
+|**Memory Usage** |RAM consumption per 1000 jobs |10-50 MB |<100 MB
+|**CPU Usage** |Processor utilization |5-15% |<25%
+|**Connection Recovery** |Time to reconnect |1-10 seconds |<30 seconds
+|===
+
+==== Performance Factors
+
+===== Message Size Impact
+
+[cols="1,2,1,1"]
+|===
+|Message Size |Processing Time |Memory Impact |Throughput
+
+|Small (<1KB) |<10ms |~1KB per job |>500 msg/s
+|Medium (1-10KB) |10-50ms |~5KB per job |200-500 msg/s
+|Large (10-100KB) |50-200ms |~50KB per job |50-200 msg/s
+|Very Large (>100KB) |>200ms |>100KB per job |<50 msg/s
+|===
+
+===== Processing Complexity
+
+* **Simple operations** (data transformation) - <50ms
+* **I/O operations** (file access, API calls) - 100-1000ms
+* **Complex calculations** (data analysis) - 500-5000ms
+* **External dependencies** (databases, services) - Variable
+
+=== Optimization Strategies
+
+==== Configuration Optimization
+
+===== Memory Management
+
+[source,python]
+----
+# Optimized for high throughput
+config = EventListenerConfig(
+    max_jobs_in_memory=1000,      # Reduce memory usage
+    job_cleanup_interval=300,     # More frequent cleanup (5 min)
+    duplicate_action="skip"       # Avoid reprocessing
+)
+
+# Optimized for reliability
+config = EventListenerConfig(
+    max_jobs_in_memory=10000,     # Higher job retention
+    job_cleanup_interval=3600,    # Less frequent cleanup (1 hour)
+    duplicate_action="reprocess"  # Handle all messages
+)
+----
+
+===== MQTT Settings
+
+[source,python]
+----
+# High performance settings
+config = EventListenerConfig(
+    qos=0,                       # Fastest delivery
+    keep_alive=30,               # Shorter keepalive
+    reconnect_retries=5,         # Quick reconnection
+    reconnect_max_interval=30
+)
+
+# High reliability settings
+config = EventListenerConfig(
+    qos=2,                       # Guaranteed delivery
+    keep_alive=60,               # Stable keepalive
+    reconnect_retries=10,        # Persistent reconnection
+    reconnect_max_interval=60
+)
+----
+
+==== Processing Optimization
+
+===== Async Processing
+
+[source,python]
+----
+import asyncio
+import aiohttp
+from Listener import EventListener, ReturnType
+
+async def optimized_async_processor(data, job_id):
+    """High-performance async processor."""
+    
+    # Use connection pooling
+    async with aiohttp.ClientSession() as session:
+        # Parallel API calls
+        tasks = [
+            fetch_data(session, data['endpoint1']),
+            fetch_data(session, data['endpoint2']),
+            fetch_data(session, data['endpoint3'])
+        ]
+        
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+    
+    # Process results
+    processed_data = combine_results(results)
+    
+    return ReturnType(
+        data=processed_data,
+        topic="results/optimized",
+        qos=0,
+        retain=False,
+        message_id=int(time.time()),
+        timestamp=datetime.now(),
+        job_id=job_id
+    )
+
+async def fetch_data(session, endpoint):
+    """Optimized data fetching with timeout."""
+    timeout = aiohttp.ClientTimeout(total=5)
+    async with session.get(endpoint, timeout=timeout) as response:
+        return await response.json()
+----
+
+===== Batch Processing
+
+[source,python]
+----
+class BatchProcessor:
+    """High-throughput batch processor."""
+    
+    def __init__(self, batch_size=50, flush_interval=10.0):
+        self.batch_size = batch_size
+        self.flush_interval = flush_interval
+        self.batch = []
+        self.last_flush = time.time()
+    
+    async def process_message(self, data, job_id):
+        """Add to batch and process when ready."""
+        self.batch.append((data, job_id))
+        
+        # Process batch if conditions met
+        if (len(self.batch) >= self.batch_size or 
+            time.time() - self.last_flush > self.flush_interval):
+            await self.flush_batch()
+    
+    async def flush_batch(self):
+        """Process entire batch efficiently."""
+        if not self.batch:
+            return
+        
+        batch_data = [item[0] for item in self.batch]
+        job_ids = [item[1] for item in self.batch]
+        
+        # Bulk processing
+        results = await process_batch_efficiently(batch_data)
+        
+        # Publish results
+        for result, job_id in zip(results, job_ids):
+            await publish_result(result, job_id)
+        
+        # Reset batch
+        self.batch = []
+        self.last_flush = time.time()
+----
+
+===== Caching Strategy
+
+[source,python]
+----
+import functools
+import time
+from typing import Dict, Any
+
+class CachedProcessor:
+    """Processor with intelligent caching."""
+    
+    def __init__(self, cache_ttl=300):  # 5 minutes
+        self.cache: Dict[str, tuple] = {}
+        self.cache_ttl = cache_ttl
+    
+    def process_with_cache(self, data: Dict[str, Any], job_id: str):
+        """Process with caching for expensive operations."""
+        
+        # Create cache key from relevant data
+        cache_key = self.create_cache_key(data)
+        
+        # Check cache
+        cached_result = self.get_cached_result(cache_key)
+        if cached_result:
+            return self.create_cached_response(cached_result, job_id)
+        
+        # Process and cache
+        result = self.expensive_processing(data)
+        self.cache_result(cache_key, result)
+        
+        return self.create_response(result, job_id)
+    
+    def create_cache_key(self, data: Dict[str, Any]) -> str:
+        """Create deterministic cache key."""
+        relevant_fields = ['input_data', 'parameters', 'operation_type']
+        key_data = {k: data.get(k) for k in relevant_fields if k in data}
+        return hashlib.md5(str(sorted(key_data.items())).encode()).hexdigest()
+    
+    def get_cached_result(self, cache_key: str):
+        """Retrieve from cache if valid."""
+        if cache_key in self.cache:
+            result, timestamp = self.cache[cache_key]
+            if time.time() - timestamp < self.cache_ttl:
+                return result
+            else:
+                del self.cache[cache_key]  # Expired
+        return None
+    
+    def cache_result(self, cache_key: str, result):
+        """Store in cache with timestamp."""
+        self.cache[cache_key] = (result, time.time())
+        
+        # Cleanup old entries periodically
+        if len(self.cache) > 1000:
+            self.cleanup_cache()
+    
+    def cleanup_cache(self):
+        """Remove expired cache entries."""
+        current_time = time.time()
+        expired_keys = [
+            key for key, (_, timestamp) in self.cache.items()
+            if current_time - timestamp > self.cache_ttl
+        ]
+        for key in expired_keys:
+            del self.cache[key]
+----
+
+==== System-Level Optimization
+
+===== Memory Profiling
+
+[source,python]
+----
+import psutil
+import gc
+import asyncio
+
+class PerformanceMonitor:
+    """Monitor system performance."""
+    
+    def __init__(self, listener):
+        self.listener = listener
+        self.stats = {
+            'messages_processed': 0,
+            'processing_times': [],
+            'memory_samples': [],
+            'error_count': 0
+        }
+    
+    async def monitor_performance(self):
+        """Continuous performance monitoring."""
+        while True:
+            await self.collect_metrics()
+            await asyncio.sleep(60)  # Every minute
+    
+    async def collect_metrics(self):
+        """Collect performance metrics."""
+        # Memory usage
+        process = psutil.Process()
+        memory_mb = process.memory_info().rss / 1024 / 1024
+        self.stats['memory_samples'].append(memory_mb)
+        
+        # Job statistics
+        all_jobs = await self.listener.get_all_jobs()
+        running_jobs = await self.listener.get_running_jobs()
+        
+        # Performance report
+        if len(self.stats['memory_samples']) % 10 == 0:  # Every 10 minutes
+            await self.generate_report()
+    
+    async def generate_report(self):
+        """Generate performance report."""
+        memory_avg = sum(self.stats['memory_samples'][-10:]) / 10
+        processing_avg = sum(self.stats['processing_times'][-100:]) / 100 if self.stats['processing_times'] else 0
+        
+        print(f"Performance Report:")
+        print(f"  Average Memory: {memory_avg:.1f} MB")
+        print(f"  Average Processing Time: {processing_avg:.3f}s")
+        print(f"  Messages Processed: {self.stats['messages_processed']}")
+        print(f"  Error Rate: {self.stats['error_count'] / max(1, self.stats['messages_processed']) * 100:.1f}%")
+----
+
+===== Resource Management
+
+[source,python]
+----
+import resource
+import signal
+
+def setup_resource_limits():
+    """Configure system resource limits."""
+    
+    # Memory limit (1GB)
+    resource.setrlimit(resource.RLIMIT_AS, (1024 * 1024 * 1024, -1))
+    
+    # File descriptor limit
+    resource.setrlimit(resource.RLIMIT_NOFILE, (1024, 4096))
+    
+    # CPU time limit (if needed)
+    # resource.setrlimit(resource.RLIMIT_CPU, (3600, -1))  # 1 hour
+
+def setup_graceful_shutdown(listener):
+    """Setup graceful shutdown handling."""
+    
+    def signal_handler(signum, frame):
+        print(f"Received signal {signum}, initiating graceful shutdown...")
+        listener.stop()
+    
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+----
+
+=== Performance Monitoring
+
+==== Built-in Metrics
+
+[source,python]
+----
+class MetricsCollector:
+    """Collect performance metrics during operation."""
+    
+    def __init__(self):
+        self.start_time = time.time()
+        self.message_count = 0
+        self.processing_times = []
+        self.error_count = 0
+    
+    def record_processing_time(self, duration: float):
+        """Record message processing time."""
+        self.processing_times.append(duration)
+        self.message_count += 1
+        
+        # Keep only recent measurements
+        if len(self.processing_times) > 1000:
+            self.processing_times = self.processing_times[-500:]
+    
+    def record_error(self):
+        """Record processing error."""
+        self.error_count += 1
+    
+    def get_metrics(self) -> Dict[str, Any]:
+        """Get current performance metrics."""
+        uptime = time.time() - self.start_time
+        
+        if self.processing_times:
+            avg_time = sum(self.processing_times) / len(self.processing_times)
+            p95_time = sorted(self.processing_times)[int(len(self.processing_times) * 0.95)]
+        else:
+            avg_time = p95_time = 0
+        
+        return {
+            'uptime_seconds': uptime,
+            'messages_processed': self.message_count,
+            'messages_per_second': self.message_count / uptime if uptime > 0 else 0,
+            'average_processing_time': avg_time,
+            'p95_processing_time': p95_time,
+            'error_count': self.error_count,
+            'error_rate': self.error_count / max(1, self.message_count)
+        }
+
+# Integration with EventListener
+def instrumented_processor(metrics: MetricsCollector):
+    """Create instrumented processor."""
+    
+    def processor(data, job_id):
+        start_time = time.time()
+        
+        try:
+            result = your_processing_logic(data, job_id)
+            return result
+        except Exception as e:
+            metrics.record_error()
+            raise
+        finally:
+            processing_time = time.time() - start_time
+            metrics.record_processing_time(processing_time)
+    
+    return processor
+----
+
+==== Benchmarking
+
+[source,python]
+----
+import asyncio
+import time
+from typing import List
+
+async def benchmark_throughput(listener, message_count=1000):
+    """Benchmark message processing throughput."""
+    
+    processed_jobs = []
+    
+    def benchmark_processor(data, job_id):
+        """Simple processor for benchmarking."""
+        processed_jobs.append(job_id)
+        return ReturnType(
+            data={"processed": True, "job_id": job_id},
+            topic="benchmark/results",
+            qos=0,
+            retain=False,
+            message_id=1,
+            timestamp=datetime.now(),
+            job_id=job_id
+        )
+    
+    # Generate test messages
+    test_messages = [
+        {"job_id": f"benchmark-{i}", "data": f"test-data-{i}"}
+        for i in range(message_count)
+    ]
+    
+    # Measure processing time
+    start_time = time.time()
+    
+    # Process messages
+    for message in test_messages:
+        await listener._process_message(message)
+    
+    # Wait for completion
+    while len(processed_jobs) < message_count:
+        await asyncio.sleep(0.1)
+    
+    end_time = time.time()
+    duration = end_time - start_time
+    throughput = message_count / duration
+    
+    print(f"Benchmark Results:")
+    print(f"  Messages: {message_count}")
+    print(f"  Duration: {duration:.2f} seconds")
+    print(f"  Throughput: {throughput:.1f} messages/second")
+    
+    return throughput
+
+async def benchmark_memory_usage(listener, job_count=10000):
+    """Benchmark memory usage with many jobs."""
+    
+    import psutil
+    process = psutil.Process()
+    
+    initial_memory = process.memory_info().rss / 1024 / 1024
+    
+    # Create many jobs
+    for i in range(job_count):
+        job_data = {"job_id": f"memory-test-{i}", "data": f"data-{i}"}
+        await listener._create_job(f"memory-test-{i}", job_data)
+    
+    peak_memory = process.memory_info().rss / 1024 / 1024
+    memory_per_job = (peak_memory - initial_memory) / job_count * 1024  # KB per job
+    
+    print(f"Memory Benchmark:")
+    print(f"  Jobs Created: {job_count}")
+    print(f"  Initial Memory: {initial_memory:.1f} MB")
+    print(f"  Peak Memory: {peak_memory:.1f} MB")
+    print(f"  Memory per Job: {memory_per_job:.2f} KB")
+    
+    return memory_per_job
+----
+
+=== Performance Tuning Guidelines
+
+==== For High Throughput
+
+. **Use QoS 0** for maximum speed
+. **Reduce job retention** time and count
+. **Implement batch processing** for multiple messages
+. **Use async operations** for I/O
+. **Minimize logging** in production
+. **Optimize processing function** complexity
+
+==== For High Reliability
+
+. **Use QoS 1 or 2** for guaranteed delivery
+. **Increase job retention** for audit trails
+. **Implement retry mechanisms** in processing
+. **Use comprehensive error handling**
+. **Enable detailed logging** for debugging
+. **Configure appropriate timeouts**
+
+==== For Low Latency
+
+. **Minimize processing** function complexity
+. **Use local resources** over network calls
+. **Implement caching** for repeated operations
+. **Reduce serialization** overhead
+. **Optimize network** connectivity to broker
+. **Use faster storage** for any file operations
+
+==== For Low Memory Usage
+
+. **Reduce `max_jobs_in_memory`** setting
+. **Decrease `job_cleanup_interval`** for frequent cleanup
+. **Use `duplicate_action="skip"`** to avoid reprocessing
+. **Implement result streaming** instead of accumulation
+. **Use lazy loading** for large data structures
+. **Profile memory usage** regularly 

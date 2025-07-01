@@ -1,0 +1,326 @@
+[[security]]
+== Security Guide
+
+Security considerations and best practices for the {voc-project}.
+
+=== Security Overview
+
+==== Security Layers
+
+[cols="1,3,1"]
+|===
+|Layer |Components |Status
+
+|**Network** |SSL/TLS, Authentication, Authorization |✅ Implemented
+|**Application** |Input validation, Error handling |✅ Implemented
+|**Data** |Configuration protection, Memory safety |✅ Implemented
+|**Process** |Resource limits, Secure logging |✅ Implemented
+|===
+
+=== Network Security
+
+==== SSL/TLS Configuration
+
+[source,python]
+----
+# Secure SSL configuration
+config = EventListenerConfig(
+    host="secure-mqtt.example.com",
+    port=8883,  # SSL port
+    
+    # Certificate validation
+    cafile="/etc/ssl/certs/ca.crt",
+    capath="/etc/ssl/certs/",
+    
+    # Authentication
+    username=os.getenv("MQTT_USERNAME"),
+    password=os.getenv("MQTT_PASSWORD")
+)
+----
+
+==== Authentication Best Practices
+
+* **Use environment variables** for credentials
+* **Rotate passwords** regularly
+* **Use strong authentication** (certificates when possible)
+* **Limit connection privileges** to minimum required
+
+[source,python]
+----
+# Secure credential handling
+import os
+from getpass import getpass
+
+def get_secure_config():
+    return EventListenerConfig(
+        username=os.getenv("MQTT_USER"),
+        password=os.getenv("MQTT_PASS") or getpass("MQTT Password: "),
+        cafile=os.getenv("MQTT_CA_FILE", "/etc/ssl/ca.crt")
+    )
+----
+
+=== Application Security
+
+==== Input Validation
+
+* **TOML syntax validation** prevents injection attacks
+* **Message size limits** prevent DoS attacks
+* **Configuration validation** ensures safe operation
+
+[source,python]
+----
+# Secure message processing
+def secure_processor(data, job_id):
+    # Validate input size
+    if len(str(data)) > 1024 * 1024:  # 1MB limit
+        raise ValueError("Message too large")
+    
+    # Validate required fields
+    required = ['job_id', 'task_type']
+    if not all(field in data for field in required):
+        raise ValueError("Missing required fields")
+    
+    # Sanitize data
+    sanitized_data = sanitize_input(data)
+    
+    return process_safely(sanitized_data, job_id)
+----
+
+==== Error Handling Security
+
+* **No sensitive data** in error messages
+* **Sanitized logging** to prevent information disclosure
+* **Controlled error responses**
+
+[source,python]
+----
+def secure_error_handler(job_id, error):
+    # Log detailed error internally
+    logger.error(f"Job {job_id} failed: {error}", extra={'job_id': job_id})
+    
+    # Return sanitized error
+    return ReturnType(
+        data={
+            "job_id": job_id,
+            "status": "error",
+            "error_code": "PROCESSING_ERROR",
+            # No sensitive details exposed
+        },
+        topic="errors",
+        qos=1,
+        retain=False,
+        message_id=int(time.time()),
+        timestamp=datetime.now(),
+        job_id=job_id
+    )
+----
+
+=== Configuration Security
+
+==== Sensitive Data Protection
+
+[source,python]
+----
+# Secure configuration management
+class SecureConfig:
+    def __init__(self):
+        self.sensitive_fields = {'password', 'token', 'key', 'secret'}
+    
+    def sanitize_config_for_logging(self, config_dict):
+        """Remove sensitive data from logs."""
+        sanitized = {}
+        for key, value in config_dict.items():
+            if any(sensitive in key.lower() for sensitive in self.sensitive_fields):
+                sanitized[key] = "***REDACTED***"
+            else:
+                sanitized[key] = value
+        return sanitized
+----
+
+==== Environment Security
+
+[source,bash]
+----
+# Secure environment setup
+export MQTT_HOST="secure-broker.internal"
+export MQTT_PORT="8883"
+export MQTT_USERNAME="service-account"
+export MQTT_PASSWORD="$(cat /secure/mqtt.pass)"
+export MQTT_CA_FILE="/etc/ssl/internal-ca.crt"
+
+# Restrict environment file access
+chmod 600 ~/.env
+----
+
+=== Process Security
+
+==== Resource Limits
+
+[source,python]
+----
+# Security-focused configuration
+config = EventListenerConfig(
+    max_jobs_in_memory=1000,     # Limit memory usage
+    job_cleanup_interval=300,    # Frequent cleanup
+    connect_timeout=30,          # Prevent hanging connections
+    reconnect_retries=5          # Limit retry attempts
+)
+----
+
+==== Secure Logging
+
+[source,python]
+----
+import logging
+import re
+
+class SecureFormatter(logging.Formatter):
+    """Logging formatter that sanitizes sensitive data."""
+    
+    def __init__(self):
+        super().__init__(
+            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        )
+        # Patterns to redact
+        self.patterns = [
+            (re.compile(r'password["\']?\s*[:=]\s*["\']?([^"\'\s]+)', re.I), 'password=***'),
+            (re.compile(r'token["\']?\s*[:=]\s*["\']?([^"\'\s]+)', re.I), 'token=***'),
+            (re.compile(r'key["\']?\s*[:=]\s*["\']?([^"\'\s]+)', re.I), 'key=***'),
+        ]
+    
+    def format(self, record):
+        msg = super().format(record)
+        
+        # Sanitize sensitive data
+        for pattern, replacement in self.patterns:
+            msg = pattern.sub(replacement, msg)
+        
+        return msg
+
+# Configure secure logging
+handler = logging.StreamHandler()
+handler.setFormatter(SecureFormatter())
+logger = logging.getLogger('Listener')
+logger.addHandler(handler)
+----
+
+=== Security Monitoring
+
+==== Threat Detection
+
+[source,python]
+----
+class SecurityMonitor:
+    def __init__(self):
+        self.failed_attempts = {}
+        self.suspicious_patterns = [
+            'script', 'exec', 'eval', 'import',
+            '../', '..\\', '/etc/', 'cmd.exe'
+        ]
+    
+    def check_message_security(self, data, job_id):
+        """Check message for security threats."""
+        message_str = str(data).lower()
+        
+        # Check for suspicious patterns
+        for pattern in self.suspicious_patterns:
+            if pattern in message_str:
+                self.log_security_event(
+                    f"Suspicious pattern '{pattern}' in job {job_id}"
+                )
+                return False
+        
+        # Check message size
+        if len(message_str) > 100000:  # 100KB
+            self.log_security_event(f"Oversized message in job {job_id}")
+            return False
+        
+        return True
+    
+    def log_security_event(self, event):
+        """Log security events for monitoring."""
+        logger.warning(f"SECURITY: {event}")
+----
+
+=== Compliance and Auditing
+
+==== Audit Logging
+
+[source,python]
+----
+class AuditLogger:
+    def __init__(self):
+        self.audit_logger = logging.getLogger('audit')
+        
+    def log_job_processing(self, job_id, status, user_context=None):
+        """Log job processing for audit trail."""
+        audit_data = {
+            'timestamp': datetime.now().isoformat(),
+            'job_id': job_id,
+            'status': status,
+            'user_context': user_context,
+            'service': 'mqtt-event-listener'
+        }
+        
+        self.audit_logger.info(json.dumps(audit_data))
+----
+
+=== Security Best Practices
+
+==== Deployment Security
+
+. **Use SSL/TLS** for all MQTT connections
+. **Store credentials** in environment variables or secure vaults
+. **Limit network access** to MQTT broker
+. **Run with minimal privileges** (non-root user)
+. **Monitor for security events** and anomalies
+. **Keep dependencies updated** for security patches
+. **Use internal networks** when possible
+. **Implement logging** for security monitoring
+
+==== Development Security
+
+. **Code review** all changes for security implications
+. **Use static analysis** tools (bandit) for vulnerability detection
+. **Test security controls** with unit tests
+. **Follow secure coding** practices
+. **Validate all inputs** from external sources
+. **Handle errors** without exposing sensitive information
+
+==== Operational Security
+
+. **Regular security assessments** of the deployment
+. **Monitor logs** for suspicious activity
+. **Rotate credentials** periodically
+. **Update certificates** before expiration
+. **Backup and test** recovery procedures
+. **Document security procedures** for incident response
+
+=== Security Checklist
+
+==== Pre-Deployment
+
+- [ ] SSL/TLS properly configured
+- [ ] Credentials stored securely
+- [ ] Input validation implemented
+- [ ] Error handling sanitized
+- [ ] Logging configured securely
+- [ ] Resource limits set
+- [ ] Security monitoring enabled
+
+==== Regular Maintenance
+
+- [ ] Dependencies updated
+- [ ] Certificates renewed
+- [ ] Credentials rotated
+- [ ] Logs reviewed for threats
+- [ ] Performance monitoring
+- [ ] Security assessments
+
+==== Incident Response
+
+- [ ] Contact procedures documented
+- [ ] Log collection automated
+- [ ] Service shutdown procedures
+- [ ] Recovery procedures tested
+- [ ] Communication plan ready 

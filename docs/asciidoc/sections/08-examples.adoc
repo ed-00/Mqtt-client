@@ -1,0 +1,1028 @@
+[[examples]]
+== Examples and Use Cases
+
+Practical examples for common use cases of the {voc-project}.
+
+=== Basic Examples
+
+==== Simple Message Processing
+
+[source,python,subs="attributes"]
+----
+import asyncio
+{var-module-import}
+
+async def main():
+    """Basic message processing example."""
+    # Configuration
+    config = EventListenerConfig(
+        host="localhost",
+        port=1883,
+        topic="events/tasks",
+        client_id="simple-processor"
+    )
+    
+    # Create listener
+    listener = EventListener(config)
+    
+    # Define processor
+    def simple_processor(data, job_id):
+        """Process incoming messages."""
+        print(f"Processing job {job_id}")
+        print(f"Task: {data.get('task_type', 'unknown')}")
+        
+        # Simple processing logic
+        result = {
+            "job_id": job_id,
+            "status": "completed",
+            "processed_at": datetime.now().isoformat(),
+            "data": data
+        }
+        
+        return ReturnType(
+            data=result,
+            topic="events/results",
+            qos=1,
+            retain=False,
+            message_id=int(time.time()),
+            timestamp=datetime.now(),
+            job_id=job_id
+        )
+    
+    # Start processing
+    print("Starting MQTT Event Listener...")
+    await listener.run(simple_processor)
+
+if __name__ == "__main__":
+    asyncio.run(main())
+----
+
+==== Configuration from Environment
+
+[source,python]
+----
+import os
+import asyncio
+from Listener import EventListener, EventListenerConfig
+
+def create_config_from_env():
+    """Create configuration from environment variables."""
+    return EventListenerConfig(
+        host=os.getenv("MQTT_HOST", "localhost"),
+        port=int(os.getenv("MQTT_PORT", 1883)),
+        username=os.getenv("MQTT_USERNAME"),
+        password=os.getenv("MQTT_PASSWORD"),
+        topic=os.getenv("MQTT_TOPIC", "events"),
+        client_id=os.getenv("MQTT_CLIENT_ID", "env-listener"),
+        
+        # SSL settings
+        cafile=os.getenv("MQTT_CA_FILE"),
+        
+        # Job settings
+        max_jobs_in_memory=int(os.getenv("MAX_JOBS", 5000)),
+        job_cleanup_interval=int(os.getenv("CLEANUP_INTERVAL", 3600))
+    )
+
+async def main():
+    config = create_config_from_env()
+    listener = EventListener(config)
+    
+    def env_processor(data, job_id):
+        return ReturnType(
+            data={"processed": True, "job_id": job_id},
+            topic=os.getenv("RESULTS_TOPIC", "results"),
+            qos=1,
+            retain=False,
+            message_id=1,
+            timestamp=datetime.now(),
+            job_id=job_id
+        )
+    
+    await listener.run(env_processor)
+
+if __name__ == "__main__":
+    asyncio.run(main())
+----
+
+=== Advanced Examples
+
+==== Multi-Topic Processing
+
+[source,python]
+----
+import asyncio
+from Listener import EventListener, EventListenerConfig, ReturnType
+
+async def multi_topic_example():
+    """Process messages from multiple topics with different handling."""
+    
+    config = EventListenerConfig(
+        host="mqtt.example.com",
+        port=1883,
+        topic="events/#",  # Subscribe to all events
+        custom_topics={
+            "events/alerts": {"qos": 2, "retain": True},
+            "events/metrics": {"qos": 0, "retain": False},
+            "events/commands": {"qos": 1, "retain": False}
+        }
+    )
+    
+    listener = EventListener(config)
+    
+    def multi_topic_processor(data, job_id):
+        """Route processing based on topic or message type."""
+        topic = data.get('_topic', '')  # Topic info from context
+        message_type = data.get('type', 'unknown')
+        
+        if 'alerts' in topic or message_type == 'alert':
+            return process_alert(data, job_id)
+        elif 'metrics' in topic or message_type == 'metric':
+            return process_metric(data, job_id)
+        elif 'commands' in topic or message_type == 'command':
+            return process_command(data, job_id)
+        else:
+            return process_default(data, job_id)
+    
+    def process_alert(data, job_id):
+        """Process alert messages with high priority."""
+        severity = data.get('severity', 'info')
+        message = data.get('message', 'No message')
+        
+        print(f"🚨 ALERT [{severity.upper()}]: {message}")
+        
+        # Send to monitoring system
+        result = {
+            "type": "alert_processed",
+            "job_id": job_id,
+            "severity": severity,
+            "processed_at": datetime.now().isoformat(),
+            "alert_id": data.get('alert_id')
+        }
+        
+        return ReturnType(
+            data=result,
+            topic="monitoring/alerts",
+            qos=2,  # High reliability for alerts
+            retain=True,
+            message_id=int(time.time()),
+            timestamp=datetime.now(),
+            job_id=job_id
+        )
+    
+    def process_metric(data, job_id):
+        """Process metric data for analytics."""
+        metric_name = data.get('metric_name')
+        value = data.get('value')
+        timestamp = data.get('timestamp')
+        
+        print(f"📊 METRIC: {metric_name} = {value} at {timestamp}")
+        
+        result = {
+            "type": "metric_processed",
+            "job_id": job_id,
+            "metric": metric_name,
+            "value": value,
+            "processed_at": datetime.now().isoformat()
+        }
+        
+        return ReturnType(
+            data=result,
+            topic="analytics/metrics",
+            qos=0,  # Lower reliability for metrics
+            retain=False,
+            message_id=int(time.time()),
+            timestamp=datetime.now(),
+            job_id=job_id
+        )
+    
+    def process_command(data, job_id):
+        """Process command messages."""
+        command = data.get('command')
+        params = data.get('parameters', {})
+        
+        print(f"⚡ COMMAND: {command} with params {params}")
+        
+        # Execute command (simplified)
+        success = execute_command(command, params)
+        
+        result = {
+            "type": "command_executed",
+            "job_id": job_id,
+            "command": command,
+            "success": success,
+            "executed_at": datetime.now().isoformat()
+        }
+        
+        return ReturnType(
+            data=result,
+            topic="commands/results",
+            qos=1,
+            retain=False,
+            message_id=int(time.time()),
+            timestamp=datetime.now(),
+            job_id=job_id
+        )
+    
+    def process_default(data, job_id):
+        """Default processing for unknown message types."""
+        print(f"📝 DEFAULT: Processing job {job_id}")
+        
+        result = {
+            "type": "default_processed",
+            "job_id": job_id,
+            "original_data": data,
+            "processed_at": datetime.now().isoformat()
+        }
+        
+        return ReturnType(
+            data=result,
+            topic="events/processed",
+            qos=0,
+            retain=False,
+            message_id=int(time.time()),
+            timestamp=datetime.now(),
+            job_id=job_id
+        )
+    
+    def execute_command(command, params):
+        """Simulate command execution."""
+        # Simplified command execution
+        commands = {
+            "restart": lambda: True,
+            "status": lambda: True,
+            "backup": lambda: params.get('target') is not None
+        }
+        
+        handler = commands.get(command)
+        return handler() if handler else False
+    
+    # Start processing
+    await listener.run(multi_topic_processor)
+
+if __name__ == "__main__":
+    asyncio.run(multi_topic_example())
+----
+
+==== Error Handling and Resilience
+
+[source,python]
+----
+import asyncio
+import logging
+from datetime import datetime, timedelta
+from Listener import EventListener, EventListenerConfig, ReturnType, ConfigError
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+async def resilient_processor_example():
+    """Example with comprehensive error handling and resilience."""
+    
+    config = EventListenerConfig(
+        host="mqtt.example.com",
+        port=1883,
+        topic="tasks/+",
+        auto_reconnect=True,
+        reconnect_retries=10,
+        reconnect_max_interval=60,
+        max_jobs_in_memory=1000,
+        job_cleanup_interval=1800  # 30 minutes
+    )
+    
+    class ResilientProcessor:
+        def __init__(self):
+            self.error_count = 0
+            self.last_error_time = None
+            self.circuit_breaker_open = False
+            self.max_errors = 5
+            self.circuit_reset_time = timedelta(minutes=5)
+        
+        def check_circuit_breaker(self):
+            """Simple circuit breaker implementation."""
+            if self.circuit_breaker_open:
+                if (datetime.now() - self.last_error_time) > self.circuit_reset_time:
+                    self.circuit_breaker_open = False
+                    self.error_count = 0
+                    logger.info("Circuit breaker reset")
+                    return False
+                return True
+            return False
+        
+        def record_error(self):
+            """Record error for circuit breaker."""
+            self.error_count += 1
+            self.last_error_time = datetime.now()
+            
+            if self.error_count >= self.max_errors:
+                self.circuit_breaker_open = True
+                logger.warning("Circuit breaker opened due to errors")
+        
+        def record_success(self):
+            """Record successful processing."""
+            if self.error_count > 0:
+                self.error_count = max(0, self.error_count - 1)
+        
+        def process_message(self, data, job_id):
+            """Process message with error handling."""
+            try:
+                # Check circuit breaker
+                if self.check_circuit_breaker():
+                    return self.create_error_response(
+                        job_id, 
+                        "circuit_breaker", 
+                        "Circuit breaker is open"
+                    )
+                
+                # Validate input
+                if not self.validate_input(data):
+                    return self.create_error_response(
+                        job_id,
+                        "validation_error",
+                        "Invalid input data"
+                    )
+                
+                # Process based on task type
+                task_type = data.get('task_type', 'unknown')
+                
+                if task_type == 'data_processing':
+                    result = self.process_data_task(data, job_id)
+                elif task_type == 'file_operation':
+                    result = self.process_file_task(data, job_id)
+                elif task_type == 'api_call':
+                    result = self.process_api_task(data, job_id)
+                else:
+                    result = self.process_unknown_task(data, job_id)
+                
+                # Record success
+                self.record_success()
+                return result
+                
+            except ValueError as e:
+                logger.error(f"Validation error for job {job_id}: {e}")
+                return self.create_error_response(job_id, "validation_error", str(e))
+                
+            except ConnectionError as e:
+                logger.error(f"Connection error for job {job_id}: {e}")
+                self.record_error()
+                return self.create_error_response(job_id, "connection_error", str(e))
+                
+            except TimeoutError as e:
+                logger.error(f"Timeout for job {job_id}: {e}")
+                return self.create_error_response(job_id, "timeout_error", str(e))
+                
+            except Exception as e:
+                logger.exception(f"Unexpected error for job {job_id}")
+                self.record_error()
+                return self.create_error_response(job_id, "processing_error", str(e))
+        
+        def validate_input(self, data):
+            """Validate input data."""
+            required_fields = ['task_type', 'job_id']
+            return all(field in data for field in required_fields)
+        
+        def process_data_task(self, data, job_id):
+            """Process data processing task."""
+            input_data = data.get('input_data', {})
+            operation = data.get('operation', 'transform')
+            
+            # Simulate processing
+            if operation == 'transform':
+                result_data = {key: str(value).upper() for key, value in input_data.items()}
+            elif operation == 'aggregate':
+                result_data = {"count": len(input_data), "keys": list(input_data.keys())}
+            else:
+                raise ValueError(f"Unknown operation: {operation}")
+            
+            return self.create_success_response(job_id, result_data, "data/results")
+        
+        def process_file_task(self, data, job_id):
+            """Process file operation task."""
+            file_path = data.get('file_path')
+            operation = data.get('operation', 'read')
+            
+            if not file_path:
+                raise ValueError("file_path is required for file operations")
+            
+            # Simulate file operation
+            if operation == 'read':
+                result = {"operation": "read", "file": file_path, "size": 1024}
+            elif operation == 'write':
+                result = {"operation": "write", "file": file_path, "success": True}
+            else:
+                raise ValueError(f"Unknown file operation: {operation}")
+            
+            return self.create_success_response(job_id, result, "files/results")
+        
+        def process_api_task(self, data, job_id):
+            """Process API call task."""
+            endpoint = data.get('endpoint')
+            method = data.get('method', 'GET')
+            
+            if not endpoint:
+                raise ValueError("endpoint is required for API calls")
+            
+            # Simulate API call (could raise ConnectionError, TimeoutError)
+            result = {
+                "endpoint": endpoint,
+                "method": method,
+                "status_code": 200,
+                "response": {"success": True}
+            }
+            
+            return self.create_success_response(job_id, result, "api/results")
+        
+        def process_unknown_task(self, data, job_id):
+            """Process unknown task type."""
+            logger.warning(f"Unknown task type for job {job_id}: {data.get('task_type')}")
+            
+            result = {
+                "job_id": job_id,
+                "status": "skipped",
+                "reason": "unknown_task_type",
+                "original_data": data
+            }
+            
+            return ReturnType(
+                data=result,
+                topic="tasks/skipped",
+                qos=0,
+                retain=False,
+                message_id=int(time.time()),
+                timestamp=datetime.now(),
+                job_id=job_id
+            )
+        
+        def create_success_response(self, job_id, result_data, topic):
+            """Create success response."""
+            result = {
+                "job_id": job_id,
+                "status": "completed",
+                "result": result_data,
+                "processed_at": datetime.now().isoformat()
+            }
+            
+            return ReturnType(
+                data=result,
+                topic=topic,
+                qos=1,
+                retain=False,
+                message_id=int(time.time()),
+                timestamp=datetime.now(),
+                job_id=job_id
+            )
+        
+        def create_error_response(self, job_id, error_type, error_message):
+            """Create error response."""
+            result = {
+                "job_id": job_id,
+                "status": "error",
+                "error_type": error_type,
+                "error_message": error_message,
+                "failed_at": datetime.now().isoformat()
+            }
+            
+            return ReturnType(
+                data=result,
+                topic="tasks/errors",
+                qos=1,
+                retain=True,  # Retain error messages
+                message_id=int(time.time()),
+                timestamp=datetime.now(),
+                job_id=job_id
+            )
+    
+    # Create processor and listener
+    processor = ResilientProcessor()
+    listener = EventListener(config)
+    
+    # Start processing
+    logger.info("Starting resilient processor...")
+    await listener.run(processor.process_message)
+
+if __name__ == "__main__":
+    asyncio.run(resilient_processor_example())
+----
+
+=== Real-World Use Cases
+
+==== IoT Data Processing
+
+[source,python]
+----
+import asyncio
+import json
+from datetime import datetime
+from Listener import EventListener, EventListenerConfig, ReturnType
+
+async def iot_data_processor():
+    """Process IoT sensor data from MQTT."""
+    
+    config = EventListenerConfig(
+        host="iot-mqtt-broker.local",
+        port=1883,
+        topic="sensors/+/data",
+        qos=1,
+        max_jobs_in_memory=10000,
+        job_cleanup_interval=3600
+    )
+    
+    class IoTProcessor:
+        def __init__(self):
+            self.sensor_thresholds = {
+                "temperature": {"min": -40, "max": 80, "critical": 75},
+                "humidity": {"min": 0, "max": 100, "critical": 95},
+                "pressure": {"min": 900, "max": 1100, "critical": 1050}
+            }
+        
+        def process_sensor_data(self, data, job_id):
+            """Process IoT sensor data."""
+            sensor_id = data.get('sensor_id')
+            sensor_type = data.get('sensor_type')
+            value = data.get('value')
+            timestamp = data.get('timestamp')
+            
+            if not all([sensor_id, sensor_type, value is not None]):
+                return self.create_error("missing_fields", job_id)
+            
+            # Validate and process data
+            processed_data = {
+                "sensor_id": sensor_id,
+                "sensor_type": sensor_type,
+                "value": value,
+                "timestamp": timestamp,
+                "processed_at": datetime.now().isoformat(),
+                "job_id": job_id
+            }
+            
+            # Check thresholds
+            alerts = self.check_thresholds(sensor_type, value, sensor_id)
+            if alerts:
+                processed_data["alerts"] = alerts
+                self.send_alerts(alerts, sensor_id, job_id)
+            
+            # Store processed data
+            return ReturnType(
+                data=processed_data,
+                topic=f"processed/sensors/{sensor_type}",
+                qos=1,
+                retain=False,
+                message_id=int(time.time()),
+                timestamp=datetime.now(),
+                job_id=job_id
+            )
+        
+        def check_thresholds(self, sensor_type, value, sensor_id):
+            """Check if sensor value exceeds thresholds."""
+            alerts = []
+            thresholds = self.sensor_thresholds.get(sensor_type, {})
+            
+            if value < thresholds.get("min", float('-inf')):
+                alerts.append({
+                    "type": "below_minimum",
+                    "threshold": thresholds["min"],
+                    "value": value
+                })
+            
+            if value > thresholds.get("max", float('inf')):
+                alerts.append({
+                    "type": "above_maximum", 
+                    "threshold": thresholds["max"],
+                    "value": value
+                })
+            
+            if value > thresholds.get("critical", float('inf')):
+                alerts.append({
+                    "type": "critical",
+                    "threshold": thresholds["critical"],
+                    "value": value
+                })
+            
+            return alerts
+        
+        def send_alerts(self, alerts, sensor_id, job_id):
+            """Send alert notifications."""
+            for alert in alerts:
+                alert_data = {
+                    "alert_id": f"alert-{job_id}-{len(alerts)}",
+                    "sensor_id": sensor_id,
+                    "alert_type": alert["type"],
+                    "value": alert["value"],
+                    "threshold": alert["threshold"],
+                    "severity": "critical" if alert["type"] == "critical" else "warning",
+                    "created_at": datetime.now().isoformat()
+                }
+                
+                # Would send to alerts topic
+                print(f"🚨 Alert: {alert_data}")
+        
+        def create_error(self, error_type, job_id):
+            """Create error response."""
+            return ReturnType(
+                data={
+                    "job_id": job_id,
+                    "status": "error",
+                    "error_type": error_type,
+                    "error_time": datetime.now().isoformat()
+                },
+                topic="sensors/errors",
+                qos=1,
+                retain=True,
+                message_id=int(time.time()),
+                timestamp=datetime.now(),
+                job_id=job_id
+            )
+    
+    processor = IoTProcessor()
+    listener = EventListener(config)
+    
+    print("Starting IoT data processor...")
+    await listener.run(processor.process_sensor_data)
+
+if __name__ == "__main__":
+    asyncio.run(iot_data_processor())
+----
+
+==== Distributed Task Processing
+
+[source,python]
+----
+import asyncio
+import uuid
+from datetime import datetime, timedelta
+from Listener import EventListener, EventListenerConfig, ReturnType
+
+async def distributed_task_processor():
+    """Distributed task processing system."""
+    
+    config = EventListenerConfig(
+        host="task-queue.example.com",
+        port=1883,
+        topic="tasks/queue",
+        client_id=f"worker-{uuid.uuid4().hex[:8]}",
+        qos=2,  # Exactly once delivery
+        max_jobs_in_memory=500,
+        job_cleanup_interval=1800
+    )
+    
+    class TaskWorker:
+        def __init__(self, worker_id):
+            self.worker_id = worker_id
+            self.processed_count = 0
+            self.start_time = datetime.now()
+        
+        def process_task(self, data, job_id):
+            """Process distributed task."""
+            task_type = data.get('task_type')
+            priority = data.get('priority', 'normal')
+            created_at = data.get('created_at')
+            
+            # Calculate task age
+            if created_at:
+                task_age = datetime.now() - datetime.fromisoformat(created_at)
+                if task_age > timedelta(hours=1):
+                    return self.create_expired_response(job_id, task_age)
+            
+            # Process based on task type
+            if task_type == 'image_processing':
+                return self.process_image_task(data, job_id)
+            elif task_type == 'data_analysis':
+                return self.process_analysis_task(data, job_id)
+            elif task_type == 'report_generation':
+                return self.process_report_task(data, job_id)
+            else:
+                return self.create_unknown_task_response(job_id, task_type)
+        
+        def process_image_task(self, data, job_id):
+            """Process image processing task."""
+            image_url = data.get('image_url')
+            operations = data.get('operations', [])
+            
+            # Simulate image processing
+            result = {
+                "job_id": job_id,
+                "task_type": "image_processing",
+                "worker_id": self.worker_id,
+                "image_url": image_url,
+                "operations_performed": operations,
+                "output_url": f"processed/{job_id}.jpg",
+                "processing_time": "2.3s",
+                "status": "completed"
+            }
+            
+            self.processed_count += 1
+            
+            return ReturnType(
+                data=result,
+                topic="tasks/completed/image",
+                qos=2,
+                retain=False,
+                message_id=int(time.time()),
+                timestamp=datetime.now(),
+                job_id=job_id
+            )
+        
+        def process_analysis_task(self, data, job_id):
+            """Process data analysis task."""
+            dataset_id = data.get('dataset_id')
+            analysis_type = data.get('analysis_type')
+            
+            # Simulate analysis
+            result = {
+                "job_id": job_id,
+                "task_type": "data_analysis",
+                "worker_id": self.worker_id,
+                "dataset_id": dataset_id,
+                "analysis_type": analysis_type,
+                "results": {
+                    "total_records": 10000,
+                    "anomalies_detected": 23,
+                    "confidence_score": 0.94
+                },
+                "status": "completed"
+            }
+            
+            self.processed_count += 1
+            
+            return ReturnType(
+                data=result,
+                topic="tasks/completed/analysis",
+                qos=2,
+                retain=False,
+                message_id=int(time.time()),
+                timestamp=datetime.now(),
+                job_id=job_id
+            )
+        
+        def process_report_task(self, data, job_id):
+            """Process report generation task."""
+            report_type = data.get('report_type')
+            parameters = data.get('parameters', {})
+            
+            # Simulate report generation
+            result = {
+                "job_id": job_id,
+                "task_type": "report_generation",
+                "worker_id": self.worker_id,
+                "report_type": report_type,
+                "report_url": f"reports/{job_id}.pdf",
+                "parameters": parameters,
+                "page_count": 15,
+                "status": "completed"
+            }
+            
+            self.processed_count += 1
+            
+            return ReturnType(
+                data=result,
+                topic="tasks/completed/reports",
+                qos=2,
+                retain=False,
+                message_id=int(time.time()),
+                timestamp=datetime.now(),
+                job_id=job_id
+            )
+        
+        def create_expired_response(self, job_id, task_age):
+            """Handle expired tasks."""
+            return ReturnType(
+                data={
+                    "job_id": job_id,
+                    "status": "expired",
+                    "worker_id": self.worker_id,
+                    "task_age_seconds": task_age.total_seconds(),
+                    "expired_at": datetime.now().isoformat()
+                },
+                topic="tasks/expired",
+                qos=1,
+                retain=False,
+                message_id=int(time.time()),
+                timestamp=datetime.now(),
+                job_id=job_id
+            )
+        
+        def create_unknown_task_response(self, job_id, task_type):
+            """Handle unknown task types."""
+            return ReturnType(
+                data={
+                    "job_id": job_id,
+                    "status": "error",
+                    "error_type": "unknown_task_type",
+                    "task_type": task_type,
+                    "worker_id": self.worker_id,
+                    "error_time": datetime.now().isoformat()
+                },
+                topic="tasks/errors",
+                qos=1,
+                retain=True,
+                message_id=int(time.time()),
+                timestamp=datetime.now(),
+                job_id=job_id
+            )
+        
+        def get_worker_stats(self):
+            """Get worker statistics."""
+            uptime = datetime.now() - self.start_time
+            return {
+                "worker_id": self.worker_id,
+                "processed_count": self.processed_count,
+                "uptime_seconds": uptime.total_seconds(),
+                "rate_per_hour": self.processed_count / (uptime.total_seconds() / 3600)
+            }
+    
+    # Create worker and listener
+    worker_id = f"worker-{uuid.uuid4().hex[:8]}"
+    worker = TaskWorker(worker_id)
+    listener = EventListener(config)
+    
+    print(f"Starting distributed task worker: {worker_id}")
+    
+    # Periodically log statistics
+    async def log_stats():
+        while True:
+            await asyncio.sleep(300)  # Every 5 minutes
+            stats = worker.get_worker_stats()
+            print(f"Worker stats: {stats}")
+    
+    # Start both the listener and stats logging
+    stats_task = asyncio.create_task(log_stats())
+    
+    try:
+        await listener.run(worker.process_task)
+    finally:
+        stats_task.cancel()
+
+if __name__ == "__main__":
+    asyncio.run(distributed_task_processor())
+----
+
+=== Testing Examples
+
+==== Unit Test Example
+
+[source,python]
+----
+import pytest
+import asyncio
+from unittest.mock import AsyncMock
+from Listener import EventListener, EventListenerConfig, JobStatus
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+class TestExampleProcessor:
+    """Example unit tests for custom processor."""
+    
+    async def test_simple_message_processing(self):
+        """Test basic message processing functionality."""
+        # Setup
+        config = EventListenerConfig(
+            host="test-host",
+            port=1883,
+            topic="test/topic"
+        )
+        listener = EventListener(config)
+        
+        # Mock MQTT client
+        listener.client = AsyncMock()
+        
+        # Test data
+        test_data = {
+            "job_id": "test-001",
+            "task_type": "test_task",
+            "data": {"key": "value"}
+        }
+        
+        # Define test processor
+        def test_processor(data, job_id):
+            return ReturnType(
+                data={"processed": True, "job_id": job_id},
+                topic="test/results",
+                qos=0,
+                retain=False,
+                message_id=1,
+                timestamp=datetime.now(),
+                job_id=job_id
+            )
+        
+        # Process message
+        await listener._process_message(test_data)
+        
+        # Verify job was created and processed
+        job_info = await listener.get_job_status("test-001")
+        assert job_info is not None
+        assert job_info.job_id == "test-001"
+    
+    async def test_error_handling(self):
+        """Test error handling in processor."""
+        config = EventListenerConfig()
+        listener = EventListener(config)
+        listener.client = AsyncMock()
+        
+        def error_processor(data, job_id):
+            if data.get("should_fail"):
+                raise ValueError("Test error")
+            return ReturnType(
+                data={"success": True},
+                topic="test/results",
+                qos=0,
+                retain=False,
+                message_id=1,
+                timestamp=datetime.now(),
+                job_id=job_id
+            )
+        
+        # Test error condition
+        error_data = {"job_id": "error-001", "should_fail": True}
+        await listener._process_message(error_data)
+        
+        # Verify job failed
+        job_info = await listener.get_job_status("error-001")
+        assert job_info.status == JobStatus.FAILED
+        assert "Test error" in job_info.error
+----
+
+=== Configuration Examples
+
+==== Production Configuration
+
+[source,python]
+----
+"""Production configuration example."""
+
+import os
+from Listener import EventListenerConfig
+
+def get_production_config():
+    """Get production-ready configuration."""
+    return EventListenerConfig(
+        # Connection settings
+        host=os.getenv("MQTT_HOST", "prod-mqtt.example.com"),
+        port=int(os.getenv("MQTT_PORT", 8883)),
+        username=os.getenv("MQTT_USERNAME"),
+        password=os.getenv("MQTT_PASSWORD"),
+        client_id=f"prod-listener-{os.getenv('HOSTNAME', 'unknown')}",
+        
+        # SSL/TLS settings
+        cafile="/etc/ssl/certs/ca-certificates.crt",
+        
+        # Connection reliability
+        auto_reconnect=True,
+        reconnect_retries=10,
+        reconnect_max_interval=60,
+        keep_alive=60,
+        
+        # Topic settings
+        topic="production/events",
+        qos=1,
+        error_topic="production/errors",
+        results_topic="production/results",
+        
+        # Job management
+        max_jobs_in_memory=10000,
+        job_cleanup_interval=3600,  # 1 hour
+        duplicate_action="reprocess",
+        
+        # Will message for monitoring
+        will={
+            "topic": "production/status",
+            "message": "listener_offline",
+            "qos": 1,
+            "retain": True
+        }
+    )
+----
+
+==== Development Configuration
+
+[source,python]
+----
+"""Development configuration example."""
+
+from Listener import EventListenerConfig
+
+def get_development_config():
+    """Get development configuration."""
+    return EventListenerConfig(
+        # Local development settings
+        host="localhost",
+        port=1883,
+        username="dev",
+        password="dev",
+        client_id="dev-listener",
+        
+        # Development topics
+        topic="dev/events",
+        error_topic="dev/errors", 
+        results_topic="dev/results",
+        
+        # Faster feedback for development
+        max_jobs_in_memory=1000,
+        job_cleanup_interval=300,  # 5 minutes
+        auto_reconnect=True,
+        reconnect_retries=3,
+        
+        # Debug settings
+        qos=0,  # Faster delivery
+        retain=False
+    )
+---- 

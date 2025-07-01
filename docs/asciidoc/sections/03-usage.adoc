@@ -1,0 +1,508 @@
+[[usage]]
+== Usage Guide
+
+This section provides comprehensive usage examples for the {voc-project}.
+
+=== Basic Usage Pattern
+
+==== Simple Event Listener
+
+[source,python,subs="attributes"]
+----
+import asyncio
+{var-module-import}
+
+async def main():
+    # Configure the listener
+    config = EventListenerConfig(
+        host="localhost",
+        port=1883,
+        topic="events",
+        client_id="my-listener"
+    )
+    
+    # Create listener instance
+    listener = EventListener(config)
+    
+    # Define message processing function
+    def process_message(data, job_id):
+        print(f"Processing job {job_id}: {data}")
+        
+        # Your processing logic here
+        result = {"status": "processed", "job_id": job_id}
+        
+        # Return results to be published
+        return ReturnType(
+            data=result,
+            topic="results",
+            qos=0,
+            retain=False,
+            message_id=1,
+            timestamp=datetime.now(),
+            job_id=job_id
+        )
+    
+    # Start listening
+    await listener.run(process_message)
+
+if __name__ == "__main__":
+    asyncio.run(main())
+----
+
+=== Message Processing
+
+==== TOML Message Format
+
+The library expects messages in TOML format:
+
+[source,toml]
+----
+job_id = "task-001"
+task_type = "data_processing"
+priority = "high"
+timestamp = "2025-01-09T10:30:00Z"
+
+[data]
+input_file = "/path/to/input.csv"
+output_file = "/path/to/output.json"
+parameters = { timeout = 300, retries = 3 }
+
+[metadata]
+user = "data_processor"
+department = "analytics"
+----
+
+==== Processing Function Patterns
+
+===== Basic Processing
+
+[source,python]
+----
+def simple_processor(data, job_id):
+    """Simple message processor."""
+    print(f"Processing: {data.get('task_type')}")
+    
+    # Process the data
+    result = {"job_id": job_id, "status": "completed"}
+    
+    return create_return_type(result, "results/simple")
+----
+
+===== Error Handling
+
+[source,python]
+----
+def robust_processor(data, job_id):
+    """Processor with error handling."""
+    try:
+        # Validate input
+        if not data.get('task_type'):
+            raise ValueError("Missing task_type")
+        
+        # Process data
+        result = process_business_logic(data)
+        
+        return create_return_type(result, "results/success")
+        
+    except Exception as e:
+        error_result = {
+            "job_id": job_id,
+            "error": str(e),
+            "status": "failed"
+        }
+        return create_return_type(error_result, "results/errors")
+----
+
+===== Async Processing
+
+[source,python]
+----
+async def async_processor(data, job_id):
+    """Asynchronous message processor."""
+    # Async operations
+    async with aiohttp.ClientSession() as session:
+        result = await external_api_call(session, data)
+    
+    # Database operations
+    await save_to_database(result)
+    
+    return create_return_type(result, "results/async")
+
+# Register async processor
+await listener.run(async_processor)
+----
+
+=== Job Management
+
+==== Monitoring Job Status
+
+[source,python]
+----
+# Get specific job status
+job_info = await listener.get_job_status("job-123")
+if job_info:
+    print(f"Job {job_info.job_id} status: {job_info.status}")
+    print(f"Started: {job_info.started_at}")
+    if job_info.completed_at:
+        print(f"Completed: {job_info.completed_at}")
+
+# Check if job is running
+is_running = await listener.is_job_running("job-123")
+print(f"Job running: {is_running}")
+
+# Check if job exists
+exists = await listener.job_exists("job-123")
+print(f"Job exists: {exists}")
+----
+
+==== Querying Jobs by Status
+
+[source,python]
+----
+# Get all running jobs
+running_jobs = await listener.get_running_jobs()
+print(f"Running jobs: {len(running_jobs)}")
+
+# Get completed jobs
+completed_jobs = await listener.get_completed_jobs()
+for job_id, job_info in completed_jobs.items():
+    print(f"Job {job_id}: {job_info.result}")
+
+# Get duplicate jobs
+duplicates = await listener.get_duplicate_jobs()
+print(f"Duplicate jobs detected: {len(duplicates)}")
+
+# Get all jobs
+all_jobs = await listener.get_all_jobs()
+print(f"Total jobs in memory: {len(all_jobs)}")
+----
+
+==== Job Cleanup
+
+[source,python]
+----
+# Manual cleanup of old jobs
+await listener.cleanup_old_jobs()
+
+# Automatic cleanup is handled by the cleanup_interval setting
+config = EventListenerConfig(
+    job_cleanup_interval=3600  # Cleanup every hour
+)
+----
+
+=== Configuration Patterns
+
+==== Environment-Based Configuration
+
+[source,python]
+----
+import os
+
+def create_config_from_env():
+    """Create configuration from environment variables."""
+    return EventListenerConfig(
+        host=os.getenv("MQTT_HOST", "localhost"),
+        port=int(os.getenv("MQTT_PORT", 1883)),
+        username=os.getenv("MQTT_USERNAME"),
+        password=os.getenv("MQTT_PASSWORD"),
+        topic=os.getenv("MQTT_TOPIC", "events"),
+        client_id=os.getenv("MQTT_CLIENT_ID", "event-listener"),
+        
+        # SSL settings
+        cafile=os.getenv("MQTT_CA_FILE"),
+        
+        # Job settings
+        max_jobs_in_memory=int(os.getenv("MAX_JOBS", 5000)),
+        job_cleanup_interval=int(os.getenv("CLEANUP_INTERVAL", 3600))
+    )
+
+config = create_config_from_env()
+----
+
+==== Multi-Environment Configuration
+
+[source,python]
+----
+def get_config(environment="development"):
+    """Get configuration for different environments."""
+    configs = {
+        "development": EventListenerConfig(
+            host="localhost",
+            port=1883,
+            topic="dev/events",
+            auto_reconnect=True,
+            max_jobs_in_memory=1000
+        ),
+        
+        "staging": EventListenerConfig(
+            host="staging-mqtt.example.com",
+            port=8883,
+            topic="staging/events",
+            auto_reconnect=True,
+            reconnect_retries=5,
+            max_jobs_in_memory=5000,
+            cafile="/etc/ssl/staging-ca.crt"
+        ),
+        
+        "production": EventListenerConfig(
+            host="mqtt.example.com",
+            port=8883,
+            topic="events",
+            auto_reconnect=True,
+            reconnect_retries=10,
+            max_jobs_in_memory=10000,
+            cafile="/etc/ssl/production-ca.crt",
+            job_cleanup_interval=1800
+        )
+    }
+    
+    return configs.get(environment, configs["development"])
+----
+
+=== Advanced Usage Patterns
+
+==== Custom Configuration Parser
+
+[source,python]
+----
+import logging
+from Listener import SafeConfigParser
+
+# Create custom parser
+logger = logging.getLogger(__name__)
+parser = SafeConfigParser(logger)
+
+# Use with EventListener
+listener = EventListener(config, config_parser=parser)
+----
+
+==== Multiple Topic Handling
+
+[source,python]
+----
+def multi_topic_processor(data, job_id):
+    """Process messages from different topics."""
+    topic = data.get('_topic')  # Topic info from context
+    
+    if topic.startswith('alerts/'):
+        return process_alert(data, job_id)
+    elif topic.startswith('metrics/'):
+        return process_metric(data, job_id)
+    elif topic.startswith('commands/'):
+        return process_command(data, job_id)
+    else:
+        return process_default(data, job_id)
+
+# Configure for multiple topics
+config = EventListenerConfig(
+    topic="events/#",  # Subscribe to all under events
+    custom_topics={
+        "alerts/+": {"qos": 2, "retain": True},
+        "metrics/+": {"qos": 0, "retain": False},
+        "commands/+": {"qos": 1, "retain": False}
+    }
+)
+----
+
+==== Graceful Shutdown
+
+[source,python]
+----
+import signal
+import asyncio
+
+class GracefulEventListener:
+    def __init__(self, config):
+        self.listener = EventListener(config)
+        self.shutdown_event = asyncio.Event()
+    
+    def signal_handler(self, signum, frame):
+        """Handle shutdown signals."""
+        print(f"Received signal {signum}, shutting down...")
+        self.listener.stop()
+        self.shutdown_event.set()
+    
+    async def run(self, processor):
+        """Run with graceful shutdown."""
+        # Register signal handlers
+        signal.signal(signal.SIGINT, self.signal_handler)
+        signal.signal(signal.SIGTERM, self.signal_handler)
+        
+        try:
+            # Start listener
+            listener_task = asyncio.create_task(
+                self.listener.run(processor)
+            )
+            
+            # Wait for shutdown
+            await self.shutdown_event.wait()
+            
+            # Wait for listener to stop
+            await listener_task
+            
+        except Exception as e:
+            print(f"Error during operation: {e}")
+        finally:
+            print("Shutdown complete")
+
+# Usage
+async def main():
+    config = EventListenerConfig(host="localhost", topic="events")
+    graceful_listener = GracefulEventListener(config)
+    await graceful_listener.run(my_processor)
+----
+
+=== Performance Optimization
+
+==== Batch Processing
+
+[source,python]
+----
+class BatchProcessor:
+    def __init__(self, batch_size=10, timeout=5.0):
+        self.batch_size = batch_size
+        self.timeout = timeout
+        self.batch = []
+        self.last_batch_time = time.time()
+    
+    async def process_message(self, data, job_id):
+        """Add message to batch for processing."""
+        self.batch.append((data, job_id))
+        
+        # Process batch if full or timeout reached
+        if (len(self.batch) >= self.batch_size or 
+            time.time() - self.last_batch_time > self.timeout):
+            await self.process_batch()
+    
+    async def process_batch(self):
+        """Process accumulated batch."""
+        if not self.batch:
+            return
+        
+        print(f"Processing batch of {len(self.batch)} messages")
+        
+        # Process all messages in batch
+        results = []
+        for data, job_id in self.batch:
+            result = await process_single_message(data, job_id)
+            results.append(result)
+        
+        # Send batch results
+        await send_batch_results(results)
+        
+        # Reset batch
+        self.batch = []
+        self.last_batch_time = time.time()
+
+# Usage
+batch_processor = BatchProcessor()
+await listener.run(batch_processor.process_message)
+----
+
+==== Memory Management
+
+[source,python]
+----
+# Configure for memory efficiency
+config = EventListenerConfig(
+    max_jobs_in_memory=1000,      # Limit job memory usage
+    job_cleanup_interval=300,     # Cleanup every 5 minutes
+    duplicate_action="skip"       # Avoid duplicate processing
+)
+
+# Monitor memory usage
+import psutil
+
+def monitor_memory():
+    """Monitor memory usage."""
+    process = psutil.Process()
+    memory_mb = process.memory_info().rss / 1024 / 1024
+    print(f"Memory usage: {memory_mb:.1f} MB")
+
+# Periodic memory monitoring
+async def memory_monitor():
+    while True:
+        monitor_memory()
+        await asyncio.sleep(60)  # Check every minute
+----
+
+=== Error Handling Patterns
+
+==== Comprehensive Error Handling
+
+[source,python]
+----
+import logging
+from Listener import ConfigError
+
+logger = logging.getLogger(__name__)
+
+async def robust_main():
+    """Main function with comprehensive error handling."""
+    try:
+        # Configuration
+        config = EventListenerConfig(
+            host="mqtt.example.com",
+            topic="events"
+        )
+        
+        # Create listener
+        listener = EventListener(config)
+        
+        # Define processor with error handling
+        def error_tolerant_processor(data, job_id):
+            try:
+                return process_data_safely(data, job_id)
+            except ValueError as e:
+                logger.error(f"Data validation error for job {job_id}: {e}")
+                return create_error_response(job_id, "validation_error", str(e))
+            except Exception as e:
+                logger.exception(f"Unexpected error for job {job_id}")
+                return create_error_response(job_id, "processing_error", str(e))
+        
+        # Run listener
+        await listener.run(error_tolerant_processor)
+        
+    except ConfigError as e:
+        logger.error(f"Configuration error: {e}")
+    except ConnectionError as e:
+        logger.error(f"Connection error: {e}")
+    except Exception as e:
+        logger.exception("Unexpected error in main")
+    finally:
+        logger.info("Application shutdown")
+
+def create_error_response(job_id, error_type, message):
+    """Create standardized error response."""
+    return ReturnType(
+        data={
+            "job_id": job_id,
+            "status": "error",
+            "error_type": error_type,
+            "error_message": message,
+            "timestamp": datetime.now().isoformat()
+        },
+        topic="errors",
+        qos=1,
+        retain=False,
+        message_id=int(time.time()),
+        timestamp=datetime.now(),
+        job_id=job_id
+    )
+----
+
+=== Best Practices
+
+[TIP]
+====
+Usage Best Practices:
+
+1. **Always handle exceptions** in your processing functions
+2. **Use meaningful job IDs** for debugging and tracking
+3. **Implement proper logging** for troubleshooting
+4. **Monitor job queues** to prevent memory issues
+5. **Use QoS appropriately** for message reliability
+6. **Implement graceful shutdown** for production systems
+7. **Test with various message formats** and edge cases
+8. **Monitor performance metrics** regularly
+==== 

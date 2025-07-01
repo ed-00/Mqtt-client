@@ -1,10 +1,16 @@
 // NB!! THIS FILE MAY NOT INCLUDE BLANK LINES!
 //-----------------------------------------------------------------------
-// Names
-// -----
-:voc-sbtal: SBTal 
-:voc-sbtal-long: Språkbanken Tal
-:voc-kth: KTH
-:voc-kth-long: KTH Royal Institute of Technology
+// Project Names
+// -------------
+:voc-project: MQTT Event Listener
+:voc-project-short: MEL
+:voc-python-package: mqtt-event-listener
+:voc-module: Listener
+:voc-author: Abed Hameed
+:voc-org: KTH
+:voc-org-long: KTH Royal Institute of Technology
+:voc-license: Apache 2.0
+:voc-version: 1.0.0
+:voc-python-version: 3.8+
 //-----------------------------------------------------------------------
 // NB!! LAST LINE OF FILE 

@@ -1,0 +1,586 @@
+[[testing]]
+== Testing Framework
+
+Comprehensive testing guide for the {voc-project}.
+
+=== Test Suite Overview
+
+The project maintains high code quality through comprehensive testing:
+
+[cols="1,2,1,1"]
+|===
+|Metric |Description |Current |Target
+
+|**Line Coverage** |Percentage of code lines tested |{var-coverage-current} |{var-coverage-target}+
+|**Unit Tests** |Individual component tests |{var-test-count-unit} |Growing
+|**Integration Tests** |Component interaction tests |{var-test-count-integration} |Growing
+|**Performance** |Test execution time |~12s |<15s
+|===
+
+=== Running Tests
+
+==== Quick Commands
+
+[source,bash,subs="attributes"]
+----
+# Run all tests with coverage
+{var-test-cmd}
+
+# Run only unit tests (fast)
+make test-unit
+
+# Run integration tests
+make test-integration
+
+# Generate coverage report
+make coverage
+
+# Quick development check
+make quick
+----
+
+==== Detailed Test Commands
+
+[source,bash]
+----
+# Run tests with verbose output
+pytest -v
+
+# Run specific test file
+pytest tests/test_event_listener.py
+
+# Run specific test class
+pytest tests/test_event_listener.py::TestJobManagement
+
+# Run specific test method
+pytest tests/test_event_listener.py::TestJobManagement::test_job_creation
+
+# Run tests by marker
+pytest -m unit                    # Unit tests only
+pytest -m integration            # Integration tests only
+pytest -m "unit and not slow"    # Fast unit tests
+
+# Run with coverage
+pytest --cov=Listener --cov-report=html
+
+# Run with debugging
+pytest -s -vv --tb=long
+----
+
+=== Test Structure
+
+==== Test Directory Layout
+
+[source,text]
+----
+tests/
+├── __init__.py                 # Test package initialization
+├── conftest.py                 # Shared fixtures and configuration
+├── test_event_listener.py      # EventListener class tests
+├── test_safe_config_parser.py  # SafeConfigParser tests
+├── test_integration.py         # Integration tests
+└── README.md                   # Testing documentation
+----
+
+==== Test Categories
+
+===== Unit Tests (`@pytest.mark.unit`)
+
+Test individual components in isolation:
+
+[source,python]
+----
+@pytest.mark.unit
+class TestEventListenerConfig:
+    """Unit tests for EventListenerConfig."""
+    
+    def test_default_values(self):
+        """Test default configuration values."""
+        config = EventListenerConfig()
+        assert config.host == "localhost"
+        assert config.port == 1883
+        assert config.auto_reconnect is True
+    
+    def test_custom_values(self):
+        """Test custom configuration values."""
+        config = EventListenerConfig(
+            host="custom.host",
+            port=8883,
+            max_jobs_in_memory=1000
+        )
+        assert config.host == "custom.host"
+        assert config.port == 8883
+        assert config.max_jobs_in_memory == 1000
+----
+
+===== Integration Tests (`@pytest.mark.integration`)
+
+Test component interactions and workflows:
+
+[source,python]
+----
+@pytest.mark.integration
+@pytest.mark.asyncio
+class TestEventListenerIntegration:
+    """Integration tests for EventListener."""
+    
+    async def test_complete_workflow(self, event_listener):
+        """Test complete message processing workflow."""
+        # Mock MQTT client
+        event_listener.client = AsyncMock()
+        
+        # Process test message
+        test_data = {"job_id": "integration-001", "task": "test"}
+        
+        def test_processor(data, job_id):
+            return ReturnType(
+                data={"result": "processed"},
+                topic="test/results",
+                qos=0,
+                retain=False,
+                message_id=1,
+                timestamp=datetime.now(),
+                job_id=job_id
+            )
+        
+        # Start processing
+        task = asyncio.create_task(event_listener.run(test_processor))
+        
+        # Simulate message processing
+        await event_listener._process_message(test_data)
+        
+        # Verify job tracking
+        job_info = await event_listener.get_job_status("integration-001")
+        assert job_info is not None
+        assert job_info.status == JobStatus.COMPLETED
+        
+        # Cleanup
+        event_listener.stop()
+        await task
+----
+
+===== Slow Tests (`@pytest.mark.slow`)
+
+Long-running tests for comprehensive scenarios:
+
+[source,python]
+----
+@pytest.mark.slow
+@pytest.mark.asyncio
+async def test_memory_management_over_time(event_listener):
+    """Test memory management with many jobs over time."""
+    # Configure for fast cleanup
+    event_listener.config = EventListenerConfig(
+        max_jobs_in_memory=100,
+        job_cleanup_interval=1  # 1 second cleanup
+    )
+    
+    # Create many jobs
+    for i in range(200):
+        await event_listener._create_job(f"job-{i}", {"data": i})
+    
+    # Wait for cleanup
+    await asyncio.sleep(2)
+    
+    # Verify memory management
+    all_jobs = await event_listener.get_all_jobs()
+    assert len(all_jobs) <= 100
+----
+
+=== Test Fixtures
+
+==== Configuration Fixtures
+
+[source,python]
+----
+@pytest.fixture
+def sample_config():
+    """Sample configuration for testing."""
+    return EventListenerConfig(
+        host="test-broker",
+        port=1883,
+        topic="test/events",
+        client_id="test-client",
+        max_jobs_in_memory=100,
+        job_cleanup_interval=60
+    )
+
+@pytest.fixture
+def ssl_config():
+    """SSL configuration for testing."""
+    return EventListenerConfig(
+        host="ssl-broker",
+        port=8883,
+        cafile="/path/to/test-ca.crt",
+        topic="secure/events"
+    )
+----
+
+==== EventListener Fixtures
+
+[source,python]
+----
+@pytest.fixture
+def event_listener(sample_config):
+    """EventListener instance for testing."""
+    return EventListener(sample_config)
+
+@pytest.fixture
+def mock_mqtt_client():
+    """Mocked MQTT client."""
+    client = AsyncMock()
+    client.connect = AsyncMock()
+    client.disconnect = AsyncMock()
+    client.subscribe = AsyncMock()
+    client.publish = AsyncMock()
+    return client
+
+@pytest.fixture
+async def connected_listener(event_listener, mock_mqtt_client):
+    """EventListener with mocked MQTT client."""
+    event_listener.client = mock_mqtt_client
+    await event_listener._connect()
+    yield event_listener
+    event_listener.stop()
+----
+
+==== Data Fixtures
+
+[source,python]
+----
+@pytest.fixture
+def sample_toml_data():
+    """Sample TOML data for testing."""
+    return {
+        "job_id": "test-001",
+        "task_type": "data_processing",
+        "priority": "high",
+        "data": {
+            "input_file": "/test/input.csv",
+            "output_file": "/test/output.json"
+        }
+    }
+
+@pytest.fixture
+def temp_toml_file(tmp_path):
+    """Temporary TOML file for testing."""
+    toml_content = """
+    job_id = "file-test-001"
+    task_type = "file_processing"
+    
+    [data]
+    input = "/path/to/input"
+    output = "/path/to/output"
+    """
+    
+    toml_file = tmp_path / "test_config.toml"
+    toml_file.write_text(toml_content)
+    return str(toml_file)
+----
+
+=== Testing Patterns
+
+==== Async Testing
+
+[source,python]
+----
+@pytest.mark.asyncio
+async def test_async_job_operations(event_listener):
+    """Test async job management operations."""
+    # Create job
+    await event_listener._create_job("async-001", {"test": "data"})
+    
+    # Check job status
+    job_info = await event_listener.get_job_status("async-001")
+    assert job_info is not None
+    assert job_info.status == JobStatus.PENDING
+    
+    # Update job status
+    await event_listener._update_job_status(
+        "async-001", 
+        JobStatus.COMPLETED, 
+        result={"success": True}
+    )
+    
+    # Verify update
+    updated_job = await event_listener.get_job_status("async-001")
+    assert updated_job.status == JobStatus.COMPLETED
+    assert updated_job.result == {"success": True}
+----
+
+==== Mocking External Dependencies
+
+[source,python]
+----
+from unittest.mock import AsyncMock, patch
+
+@pytest.mark.unit
+async def test_mqtt_connection_error_handling(event_listener):
+    """Test MQTT connection error handling."""
+    # Mock connection failure
+    with patch.object(event_listener.client, 'connect') as mock_connect:
+        mock_connect.side_effect = ConnectionError("Connection failed")
+        
+        # Test error handling
+        with pytest.raises(ConnectionError):
+            await event_listener._connect()
+
+@pytest.mark.unit  
+def test_toml_parsing_error_handling(safe_config_parser):
+    """Test TOML parsing error handling."""
+    invalid_toml = "invalid toml content [[[["
+    
+    with pytest.raises(ConfigError):
+        safe_config_parser.parse_config_from_string(invalid_toml)
+----
+
+==== Parameterized Tests
+
+[source,python]
+----
+@pytest.mark.parametrize("host,port,expected", [
+    ("localhost", 1883, "mqtt://localhost:1883"),
+    ("mqtt.example.com", 8883, "mqtt://mqtt.example.com:8883"),
+    ("ssl-broker", 8884, "mqtt://ssl-broker:8884"),
+])
+def test_uri_generation(host, port, expected):
+    """Test URI generation with different parameters."""
+    config = EventListenerConfig(host=host, port=port)
+    assert config.uri == expected
+
+@pytest.mark.parametrize("status,expected_running", [
+    (JobStatus.PENDING, False),
+    (JobStatus.RUNNING, True),
+    (JobStatus.COMPLETED, False),
+    (JobStatus.FAILED, False),
+])
+async def test_job_running_status(event_listener, status, expected_running):
+    """Test job running status detection."""
+    await event_listener._create_job("param-001", {})
+    await event_listener._update_job_status("param-001", status)
+    
+    is_running = await event_listener.is_job_running("param-001")
+    assert is_running == expected_running
+----
+
+==== Error Condition Testing
+
+[source,python]
+----
+@pytest.mark.unit
+def test_invalid_configuration():
+    """Test handling of invalid configuration."""
+    with pytest.raises(ValueError):
+        EventListenerConfig(port=-1)  # Invalid port
+    
+    with pytest.raises(ValueError):
+        EventListenerConfig(qos=5)    # Invalid QoS
+
+@pytest.mark.unit
+async def test_duplicate_job_handling(event_listener):
+    """Test duplicate job detection and handling."""
+    # Create initial job
+    await event_listener._create_job("dup-001", {"data": "test"})
+    
+    # Try to create duplicate
+    duplicate_created = await event_listener._create_job("dup-001", {"data": "test2"})
+    assert duplicate_created is False
+    
+    # Verify duplicate tracking
+    duplicates = await event_listener.get_duplicate_jobs()
+    assert "dup-001" in duplicates
+----
+
+=== Coverage Analysis
+
+==== Coverage Configuration
+
+Coverage settings in `pyproject.toml`:
+
+[source,toml]
+----
+[tool.coverage.run]
+source = ["Listener"]
+omit = ["*/tests/*", "*/test_*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+]
+----
+
+==== Coverage Reports
+
+[source,bash]
+----
+# Generate HTML coverage report
+pytest --cov=Listener --cov-report=html
+open htmlcov/index.html
+
+# Generate terminal report
+pytest --cov=Listener --cov-report=term-missing
+
+# Generate XML report (for CI)
+pytest --cov=Listener --cov-report=xml
+----
+
+==== Coverage Targets
+
+[cols="1,2,1,1"]
+|===
+|Coverage Type |Description |Current |Target
+
+|Line Coverage |Percentage of lines executed |{var-coverage-current} |{var-coverage-target}+
+|Branch Coverage |Percentage of branches taken |82% |80%+
+|Function Coverage |Percentage of functions called |95% |90%+
+|===
+
+=== Performance Testing
+
+==== Benchmark Tests
+
+[source,python]
+----
+import time
+import pytest
+
+@pytest.mark.benchmark
+def test_job_creation_performance(event_listener, benchmark):
+    """Benchmark job creation performance."""
+    def create_jobs():
+        for i in range(100):
+            asyncio.run(event_listener._create_job(f"perf-{i}", {"data": i}))
+    
+    result = benchmark(create_jobs)
+    assert result is not None
+
+@pytest.mark.benchmark
+async def test_message_processing_throughput(event_listener):
+    """Test message processing throughput."""
+    start_time = time.time()
+    
+    # Process 1000 messages
+    for i in range(1000):
+        test_data = {"job_id": f"throughput-{i}", "data": i}
+        await event_listener._process_message(test_data)
+    
+    end_time = time.time()
+    duration = end_time - start_time
+    throughput = 1000 / duration
+    
+    print(f"Throughput: {throughput:.1f} messages/second")
+    assert throughput > 100  # Minimum acceptable throughput
+----
+
+==== Memory Usage Tests
+
+[source,python]
+----
+import psutil
+import gc
+
+@pytest.mark.slow
+async def test_memory_usage_under_load(event_listener):
+    """Test memory usage under sustained load."""
+    process = psutil.Process()
+    initial_memory = process.memory_info().rss
+    
+    # Create many jobs
+    for i in range(10000):
+        await event_listener._create_job(f"memory-{i}", {"data": f"test-{i}"})
+    
+    # Force garbage collection
+    gc.collect()
+    
+    peak_memory = process.memory_info().rss
+    memory_increase = peak_memory - initial_memory
+    memory_mb = memory_increase / 1024 / 1024
+    
+    print(f"Memory increase: {memory_mb:.1f} MB")
+    assert memory_mb < 100  # Should not use more than 100MB
+----
+
+=== Continuous Integration
+
+==== GitHub Actions Workflow
+
+Tests run automatically on:
+
+* Push to `main` or `develop` branches
+* Pull requests
+* Tag creation
+
+[source,yaml]
+----
+name: Tests
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.8, 3.9, 3.10, 3.11, 3.12]
+    
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v3
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Install dependencies
+      run: |
+        pip install -e .[dev]
+    
+    - name: Run tests
+      run: |
+        pytest --cov=Listener --cov-report=xml
+    
+    - name: Upload coverage
+      uses: codecov/codecov-action@v3
+----
+
+=== Test Maintenance
+
+==== Adding New Tests
+
+When adding new functionality:
+
+. **Write tests first** (TDD approach)
+. **Cover both success and failure cases**
+. **Include edge cases and error conditions**
+. **Add integration tests for new workflows**
+. **Update test documentation**
+
+==== Test Review Checklist
+
+. [ ] Tests cover new functionality
+. [ ] Both positive and negative cases tested
+. [ ] Async operations properly tested
+. [ ] Mocks used appropriately
+. [ ] Test names are descriptive
+. [ ] Tests are fast and reliable
+. [ ] Coverage requirements met
+
+==== Debugging Tests
+
+[source,bash]
+----
+# Run single test with debugging
+pytest tests/test_event_listener.py::test_specific -s -vv
+
+# Run tests and drop into debugger on failure
+pytest --pdb
+
+# Run tests with profiling
+pytest --profile
+
+# Show test durations
+pytest --durations=10
+---- 

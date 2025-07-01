@@ -1,0 +1,270 @@
+[[changelog]]
+== Changelog
+
+Version history and changes for the {voc-project}.
+
+=== Version {voc-version} (2025-01-09)
+
+*🎉 Initial Internal Release*
+
+==== Features
+
+* **MQTT Event Listener** - Asynchronous MQTT client with comprehensive job tracking
+* **TOML Message Processing** - Automatic parsing and validation of TOML message content
+* **Job Management System** - In-memory job tracking with status monitoring
+* **Configuration Management** - Unified configuration system with validation
+* **Safe Configuration Parser** - Robust TOML parsing with error handling
+* **Duplicate Detection** - Configurable duplicate job handling
+* **Error Handling** - Comprehensive error management and reporting
+* **Type Safety** - Full type hints for better IDE support
+
+==== Core Components
+
+* `EventListener` - Main listener class with job tracking capabilities
+* `EventListenerConfig` - Configuration dataclass with validation
+* `SafeConfigParser` - TOML parser with safe error handling
+* `JobInfo` - Job information tracking with status and metadata
+* `ReturnType` - Structured return type for processed messages
+* `JobStatus` - Enumeration for job execution states
+
+==== Job Tracking Features
+
+* **In-memory job management** with configurable limits
+* **Job status tracking** (pending, running, completed, failed, duplicate)
+* **Automatic cleanup** of old jobs based on configurable intervals
+* **Job querying** by status and job ID
+* **Duplicate handling** with configurable actions (skip, reprocess, error)
+
+==== MQTT Features
+
+* **Auto-reconnection** with exponential backoff
+* **SSL/TLS support** with certificate validation
+* **QoS levels** 0, 1, and 2 support
+* **Topic wildcards** support (`+` and `#`)
+* **Will messages** for connection status monitoring
+* **Custom topic configurations** with individual settings
+
+==== Configuration Features
+
+* **Environment variable** integration
+* **File-based configuration** support
+* **Validation** with meaningful error messages
+* **SSL/TLS configuration** options
+* **Connection reliability** settings
+* **Job management** parameters
+
+==== Development Features
+
+* **Comprehensive testing** with {var-test-count-unit} unit tests and {var-test-count-integration} integration tests
+* **{var-coverage-current} code coverage** exceeding {var-coverage-target} target
+* **Type hints** for all public APIs
+* **Documentation** with usage examples
+* **Code quality** tools (flake8, bandit, safety)
+
+==== Distribution Features
+
+* **Modern Python packaging** with `pyproject.toml`
+* **Git-based installation** for internal use
+* **Wheel distribution** support
+* **Development dependencies** for contributors
+* **Build automation** with scripts
+* **Internal distribution** guide
+
+==== Documentation
+
+* **Comprehensive README** with installation and usage
+* **API reference** with complete method documentation
+* **Configuration guide** with all options explained
+* **Usage examples** for common scenarios
+* **Development guide** for contributors
+* **Testing framework** documentation
+* **Troubleshooting guide** for common issues
+
+==== Technical Details
+
+* **Python {var-python-min}+** compatibility
+* **Asyncio-based** for high performance
+* **Memory efficient** with configurable job limits
+* **Thread-safe** job management
+* **Graceful shutdown** handling
+
+=== Upcoming Features
+
+==== Version 1.1.0 (Planned)
+
+*Planned features for the next release:*
+
+===== Enhanced Job Management
+
+* **Persistent job storage** option for reliability
+* **Job priority queues** for different processing priorities
+* **Job scheduling** with delayed execution
+* **Batch processing** capabilities for improved throughput
+* **Job retry mechanisms** with exponential backoff
+
+===== Monitoring and Observability
+
+* **Metrics collection** (Prometheus/StatsD support)
+* **Health check endpoints** for monitoring
+* **Performance dashboards** integration
+* **Distributed tracing** support
+* **Custom alerting** based on job failures
+
+===== Advanced Configuration
+
+* **Dynamic configuration** reload without restart
+* **Configuration profiles** for different environments
+* **Secret management** integration
+* **Configuration validation** schemas
+* **Hot-swappable processors** for A/B testing
+
+===== Scalability Improvements
+
+* **Horizontal scaling** support
+* **Load balancing** across multiple instances
+* **Cluster coordination** for distributed processing
+* **Message partitioning** strategies
+* **Automatic scaling** based on queue depth
+
+===== Developer Experience
+
+* **Plugin system** for extensibility
+* **Custom serializers** beyond TOML
+* **Message transformation** pipelines
+* **Development mode** with enhanced debugging
+* **Configuration wizard** for easy setup
+
+=== Version History Guidelines
+
+==== Semantic Versioning
+
+The project follows semantic versioning (SemVer):
+
+* **MAJOR** version for incompatible API changes
+* **MINOR** version for backwards-compatible functionality additions
+* **PATCH** version for backwards-compatible bug fixes
+
+==== Release Types
+
+===== Major Releases (x.0.0)
+
+* Breaking API changes
+* Major architecture updates
+* Significant new features
+* Migration guides provided
+
+===== Minor Releases (x.y.0)
+
+* New features and capabilities
+* Performance improvements
+* New configuration options
+* Backwards compatibility maintained
+
+===== Patch Releases (x.y.z)
+
+* Bug fixes
+* Security updates
+* Documentation improvements
+* Performance optimizations
+
+==== Change Categories
+
+Changes are categorized as:
+
+* **Features** - New functionality and capabilities
+* **Improvements** - Enhancements to existing features
+* **Bug Fixes** - Resolution of reported issues
+* **Security** - Security-related updates
+* **Documentation** - Documentation updates and improvements
+* **Development** - Changes affecting developers and contributors
+* **Infrastructure** - Build, CI/CD, and deployment changes
+
+=== Migration Guidelines
+
+==== Future API Changes
+
+*Guidelines for handling future breaking changes:*
+
+===== Deprecation Policy
+
+. **Advance notice** - Deprecated features announced in minor releases
+. **Deprecation period** - Minimum 2 minor versions before removal
+. **Migration guides** - Detailed guides for breaking changes
+. **Backwards compatibility** - Maintained during deprecation period
+
+===== Migration Support
+
+. **Automated migration tools** when possible
+. **Step-by-step guides** for manual migration
+. **Example code** showing old vs new approaches
+. **Testing strategies** for validation
+. **Support channels** for migration assistance
+
+=== Contributing to Changelog
+
+==== For Maintainers
+
+When releasing new versions:
+
+. **Update version numbers** in all relevant files
+. **Document all changes** in this changelog
+. **Create git tags** for releases
+. **Update internal distribution** documentation
+. **Notify team** of new releases
+
+==== Change Documentation Format
+
+[source,markdown]
+----
+=== Version X.Y.Z (YYYY-MM-DD)
+
+*Brief description*
+
+==== Features
+* New feature description
+* Another new feature
+
+==== Improvements  
+* Enhancement description
+* Performance improvement
+
+==== Bug Fixes
+* Bug fix description
+* Security fix description
+
+==== Breaking Changes
+* Breaking change with migration guide
+----
+
+==== Internal Release Notes
+
+For each release, maintain internal notes including:
+
+* **Performance benchmarks** and comparisons
+* **Known issues** and workarounds
+* **Deployment considerations** for internal systems
+* **Testing coverage** reports
+* **Security assessment** results
+
+=== Support Information
+
+==== Version Support
+
+* **Current version** ({voc-version}) - Full support
+* **Previous minor** (when available) - Security fixes only
+* **Older versions** - Community support through issues
+
+==== End of Life Policy
+
+* **Major versions** - Supported for 2 years after release
+* **Minor versions** - Supported until next major release
+* **Security fixes** - Backported to supported versions only
+
+==== Upgrade Recommendations
+
+* **Stay current** with latest minor version for new features
+* **Plan upgrades** around major releases for breaking changes
+* **Test thoroughly** before upgrading production systems
+* **Review changelogs** before upgrading
+
+For questions about specific versions or upgrade paths, contact {var-email}. 

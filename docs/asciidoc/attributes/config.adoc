@@ -1,7 +1,7 @@
 // NB!! THIS FILE MAY NOT INCLUDE BLANK LINES!
 //-----------------------------------------------------------------------
-// Repo version (documentation is versione on a per-repo basis)
-:repoversion: 1.1.0-0.0.1
+// Repo version (documentation is versioned on a per-repo basis)
+:repoversion: 1.0.0
 // Config includes
 // ---------------
 // Default directories
@@ -16,8 +16,17 @@ include::./variables.adoc[]
 // Configuration
 // -------------
 // For these pages, we use a ToC as standard
-:toc:     left
+:toc: left
+:toclevels: 4
 // This allows bullets in callouts, among other things
-:icons:   font
+:icons: font
+// Enable source highlighting
+:source-highlighter: highlightjs
+// Document attributes
+:sectlinks:
+:sectanchors:
+:sectnums:
+:experimental:
+:stem:
 //-----------------------------------------------------------------------
 // NB!! LAST LINE OF FILE 

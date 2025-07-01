@@ -1,0 +1,411 @@
+[[architecture]]
+== System Architecture
+
+Technical architecture and design of the {voc-project}.
+
+=== High-Level Architecture
+
+[source,text]
+----
+┌─────────────────────────────────────────────────────────────────┐
+│                    MQTT Event Listener                         │
+├─────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
+│  │  EventListener  │  │ SafeConfigParser│  │ EventListener   │ │
+│  │                 │  │                 │  │ Config          │ │
+│  │ • Message Proc  │  │ • TOML Parsing  │  │ • Configuration │ │
+│  │ • Job Tracking  │  │ • Validation    │  │ • Validation    │ │
+│  │ • MQTT Client   │  │ • Error Handling│  │ • Defaults      │ │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘ │
+├─────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
+│  │    JobInfo      │  │   ReturnType    │  │   JobStatus     │ │
+│  │                 │  │                 │  │                 │ │
+│  │ • Job Metadata  │  │ • Result Data   │  │ • Status Enum   │ │
+│  │ • Status        │  │ • Topic Info    │  │ • Transitions   │ │
+│  │ • Timestamps    │  │ • MQTT Settings │  │                 │ │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘ │
+├─────────────────────────────────────────────────────────────────┤
+│                       Dependencies                             │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
+│  │     AMQTT       │  │      TOML       │  │    asyncio      │ │
+│  │                 │  │                 │  │                 │ │
+│  │ • MQTT Client   │  │ • Config Parser │  │ • Async Runtime │ │
+│  │ • SSL Support   │  │ • Serialization │  │ • Event Loop    │ │
+│  │ • Auto-reconnect│  │                 │  │ • Concurrency   │ │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘ │
+└─────────────────────────────────────────────────────────────────┘
+----
+
+=== Component Architecture
+
+==== EventListener Core
+
+The main `EventListener` class orchestrates all functionality:
+
+[source,text]
+----
+EventListener
+├── Configuration Management
+│   ├── Config validation
+│   ├── Environment integration
+│   └── Default value handling
+├── MQTT Client Management
+│   ├── Connection handling
+│   ├── Subscription management
+│   ├── Auto-reconnection
+│   └── SSL/TLS support
+├── Message Processing
+│   ├── TOML parsing
+│   ├── Job creation
+│   ├── Function execution
+│   └── Result publishing
+├── Job Tracking System
+│   ├── In-memory storage
+│   ├── Status management
+│   ├── Duplicate detection
+│   └── Cleanup operations
+└── Error Handling
+    ├── Connection errors
+    ├── Processing errors
+    ├── Configuration errors
+    └── Recovery mechanisms
+----
+
+==== Data Flow
+
+[source,text]
+----
+MQTT Message → TOML Parser → Job Creation → Processing Function → Result Publishing
+     ↓              ↓             ↓              ↓                  ↓
+Connection     Validation    Job Tracking   User Function     MQTT Publish
+Management     & Parsing     & Status       Execution         & Logging
+     ↓              ↓             ↓              ↓                  ↓
+Auto-reconnect Error         Memory         Error            Topic
+& Monitoring   Handling      Management     Handling         Routing
+----
+
+=== Memory Management
+
+==== Job Storage Strategy
+
+[cols="1,2,1,2"]
+|===
+|Component |Storage Type |Lifetime |Cleanup Strategy
+
+|Active Jobs |In-memory Dict |Processing duration |Immediate on completion
+|Completed Jobs |In-memory Dict |Configurable TTL |Periodic cleanup
+|Failed Jobs |In-memory Dict |Configurable TTL |Periodic cleanup  
+|Duplicate Jobs |In-memory Set |Configurable TTL |Periodic cleanup
+|===
+
+==== Memory Optimization
+
+* **Configurable limits** on maximum jobs in memory
+* **Periodic cleanup** of old completed jobs
+* **Efficient data structures** for job tracking
+* **Memory monitoring** capabilities
+
+[source,python]
+----
+# Memory-efficient job storage
+class JobTracker:
+    def __init__(self, max_jobs: int = 5000):
+        self.jobs: Dict[str, JobInfo] = {}
+        self.max_jobs = max_jobs
+        self.cleanup_interval = 3600  # 1 hour
+    
+    async def cleanup_old_jobs(self):
+        """Remove old completed/failed jobs."""
+        cutoff_time = datetime.now() - timedelta(seconds=self.cleanup_interval)
+        
+        to_remove = [
+            job_id for job_id, job in self.jobs.items()
+            if job.status in [JobStatus.COMPLETED, JobStatus.FAILED]
+            and job.completed_at 
+            and job.completed_at < cutoff_time
+        ]
+        
+        for job_id in to_remove:
+            del self.jobs[job_id]
+----
+
+=== Concurrency Model
+
+==== Async/Await Architecture
+
+The library is built on Python's asyncio framework:
+
+[source,text]
+----
+Main Event Loop
+├── MQTT Client Task
+│   ├── Connection monitoring
+│   ├── Message receiving
+│   └── Reconnection handling
+├── Message Processing Tasks
+│   ├── Parallel processing
+│   ├── Job status updates
+│   └── Result publishing
+├── Cleanup Tasks
+│   ├── Periodic job cleanup
+│   ├── Memory monitoring
+│   └── Health checks
+└── User Function Execution
+    ├── Sync function wrapper
+    ├── Async function direct call
+    └── Error boundary handling
+----
+
+==== Thread Safety
+
+* **asyncio-based** - Single-threaded event loop
+* **Lock-protected** job management operations
+* **Atomic updates** for job status changes
+* **Thread-safe** configuration access
+
+[source,python]
+----
+class EventListener:
+    def __init__(self, config: EventListenerConfig):
+        self.job_lock = asyncio.Lock()  # Protects job operations
+        self.jobs: Dict[str, JobInfo] = {}
+        
+    async def _create_job(self, job_id: str, data: Dict[str, Any]) -> bool:
+        async with self.job_lock:
+            if job_id in self.jobs:
+                return False  # Duplicate
+            self.jobs[job_id] = JobInfo(job_id=job_id, ...)
+            return True
+----
+
+=== Error Handling Strategy
+
+==== Error Classification
+
+[cols="1,2,1,2"]
+|===
+|Error Type |Description |Recovery |Impact
+
+|**Connection Errors** |MQTT broker connectivity |Auto-reconnect |Service disruption
+|**Configuration Errors** |Invalid settings |Manual fix required |Startup failure
+|**Processing Errors** |User function failures |Job marked failed |Single job impact
+|**Memory Errors** |Resource exhaustion |Cleanup + backpressure |Performance degradation
+|===
+
+==== Error Recovery
+
+[source,text]
+----
+Error Detection
+     ↓
+Error Classification
+     ↓
+Recovery Strategy Selection
+     ├── Auto-retry (Connection)
+     ├── Job Failure (Processing)
+     ├── Circuit Breaker (Repeated failures)
+     └── Graceful Degradation (Resource issues)
+     ↓
+Error Logging & Monitoring
+     ↓
+Recovery Execution
+----
+
+=== Performance Characteristics
+
+==== Throughput Metrics
+
+[cols="1,2,1,1"]
+|===
+|Metric |Description |Typical Value |Target
+
+|**Message Processing** |Messages per second |100-1000 msg/s |>100 msg/s
+|**Memory Usage** |RAM per 1000 jobs |~10-50 MB |<100 MB
+|**Latency** |Processing delay |<100ms |<500ms
+|**Connection Recovery** |Reconnection time |1-10 seconds |<30 seconds
+|===
+
+==== Scalability Factors
+
+* **Message size** - Larger TOML messages require more parsing time
+* **Processing complexity** - User function execution time dominates
+* **Job retention** - More jobs in memory increase lookup time
+* **Network latency** - MQTT broker distance affects performance
+
+=== Security Architecture
+
+==== Security Layers
+
+[source,text]
+----
+Application Security
+├── Input Validation
+│   ├── TOML syntax validation
+│   ├── Configuration validation
+│   └── Message size limits
+├── Connection Security
+│   ├── SSL/TLS encryption
+│   ├── Certificate validation
+│   ├── Authentication
+│   └── Authorization
+├── Data Security
+│   ├── Secure configuration handling
+│   ├── Credential management
+│   └── Memory protection
+└── Process Security
+    ├── Error information filtering
+    ├── Logging sanitization
+    └── Resource limits
+----
+
+==== Security Considerations
+
+* **Credential Protection** - Environment variables for sensitive data
+* **Network Security** - SSL/TLS for all MQTT connections
+* **Input Validation** - Strict TOML parsing and validation
+* **Resource Limits** - Memory and processing bounds
+* **Error Handling** - No sensitive data in error messages
+
+=== Configuration Architecture
+
+==== Configuration Hierarchy
+
+[source,text]
+----
+Configuration Sources (Priority Order)
+1. Explicit Parameters (Highest)
+2. Environment Variables
+3. Configuration Files
+4. Default Values (Lowest)
+
+Configuration Validation
+├── Type checking
+├── Range validation
+├── Format validation
+└── Dependency validation
+
+Configuration Application
+├── MQTT client setup
+├── Job management setup
+├── Error handling setup
+└── Performance tuning
+----
+
+==== Configuration Flow
+
+[source,python]
+----
+# Configuration processing flow
+EventListenerConfig.__post_init__()
+    ↓
+validate_configuration()
+    ├── Port range (1-65535)
+    ├── QoS values (0, 1, 2)
+    ├── Timeout values (>0)
+    └── Memory limits (>0)
+    ↓
+apply_environment_overrides()
+    ↓
+generate_derived_values()
+    ├── URI from host/port
+    ├── Topic configurations
+    └── SSL context setup
+----
+
+=== Extensibility Points
+
+==== Plugin Architecture
+
+The library provides several extension points:
+
+* **Custom Processors** - User-defined message processing functions
+* **Configuration Parsers** - Alternative to SafeConfigParser
+* **Error Handlers** - Custom error processing logic
+* **Monitoring Hooks** - Performance and health monitoring
+
+==== Future Extensions
+
+* **Persistence Layer** - Database storage for jobs
+* **Message Serializers** - Support for JSON, MessagePack, etc.
+* **Load Balancing** - Distributed processing capabilities
+* **Caching Layer** - Redis/Memcached integration
+* **Metrics Export** - Prometheus/StatsD integration
+
+=== Testing Architecture
+
+==== Test Strategy
+
+[source,text]
+----
+Testing Pyramid
+├── Unit Tests (45+ tests)
+│   ├── Configuration validation
+│   ├── Job management
+│   ├── TOML parsing
+│   └── Error handling
+├── Integration Tests (12+ tests)
+│   ├── MQTT connectivity
+│   ├── End-to-end workflows
+│   ├── Error scenarios
+│   └── Performance tests
+└── System Tests
+    ├── Multi-environment
+    ├── Load testing
+    └── Failure testing
+----
+
+==== Mock Architecture
+
+* **MQTT Client Mocking** - AsyncMock for AMQTT client
+* **Network Simulation** - Connection failure scenarios
+* **Time Mocking** - Accelerated cleanup testing
+* **File System Mocking** - Configuration file testing
+
+=== Deployment Architecture
+
+==== Internal Deployment
+
+[source,text]
+----
+Development Environment
+├── Local MQTT broker
+├── Development configuration
+├── Debug logging
+└── Test data
+
+Staging Environment  
+├── Staging MQTT broker
+├── Production-like config
+├── Integration testing
+└── Performance validation
+
+Production Environment
+├── Production MQTT broker
+├── Optimized configuration
+├── Monitoring & alerting
+└── High availability
+----
+
+==== Distribution Model
+
+* **Git-based Installation** - Direct from repository
+* **Wheel Distribution** - Pre-built packages
+* **Container Support** - Docker deployment ready
+* **Internal Package Index** - Private package repository
+
+=== Monitoring and Observability
+
+==== Built-in Monitoring
+
+* **Job Status Tracking** - Real-time job state monitoring
+* **Connection Health** - MQTT connection status
+* **Memory Usage** - Job memory consumption
+* **Error Rates** - Processing failure statistics
+
+==== External Integration
+
+* **Logging Integration** - Standard Python logging
+* **Metrics Export** - Future Prometheus support
+* **Health Checks** - HTTP endpoint (planned)
+* **Distributed Tracing** - OpenTelemetry (planned) 

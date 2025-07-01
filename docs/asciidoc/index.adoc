@@ -1,25 +1,118 @@
-= SBTal documentation index page 
+= {voc-project} Documentation
 include::./attributes/config.adoc[]
-:author_1:         Jens Edlund
-:email_1:          edlund@speech.kth.se
-:firstname_1:      Jens
-:lastname_1:       Edlund
-:authorinitials_1: JE
-:revnumber:        {repoversion}
-:revdate:          2022-11-17
-:revremark:        Initial release
-:description: Index page template for SBTal documentation
-:keywords: documentation, sbtal policy, sbtal best practices
+:author: {voc-author}
+:email: {var-email}
+:revnumber: {voc-version}
+:revdate: 2025-01-09
+:revremark: Complete documentation for internal distribution
+:description: Comprehensive documentation for the MQTT Event Listener library
+:keywords: MQTT, event listener, job tracking, asyncio, Python, internal, documentation
 
-{voc-sbtal} repos should have an index page set up like this template.
+{voc-project} is a Python library for MQTT event listening with comprehensive job tracking, configuration parsing, and error handling capabilities.
 
-== Links
+[IMPORTANT]
+====
+This is internal software for organizational use only. See the link:{link-internal-dist}[Internal Distribution Guide] for installation and usage within your organization.
+====
 
-* link:/docs/html/index.html[Main {voc-sbtal} documentation]
+== Quick Start
 
+[source,bash,subs="attributes"]
+----
+# Install from repository
+{var-install-cmd}
 
-== References
+# Import and use
+python -c "from {voc-module} import EventListener; print('Installation successful!')"
+----
 
-bibliography::[]
+[source,python,subs="attributes"]
+----
+import asyncio
+{var-module-import}
+
+async def main():
+    config = EventListenerConfig(host="localhost", topic="events")
+    listener = EventListener(config)
+    
+    def processor(data, job_id):
+        print(f"Processing: {data}")
+        return None
+    
+    await listener.run(processor)
+
+asyncio.run(main())
+----
+
+== Project Information
+
+[cols="1,3"]
+|===
+|Version |{voc-version}
+|License |{voc-license}
+|Python |{voc-python-version}
+|Author |{voc-author}
+|Organization |{voc-org-long}
+|Repository |{link-repo}
+|===
+
+== Documentation Sections
+
+// Include all documentation sections
+include::sections/01-installation.adoc[]
+
+include::sections/02-configuration.adoc[]
+
+include::sections/03-usage.adoc[]
+
+include::sections/04-api-reference.adoc[]
+
+include::sections/05-development.adoc[]
+
+include::sections/06-testing.adoc[]
+
+include::sections/07-architecture.adoc[]
+
+include::sections/08-examples.adoc[]
+
+include::sections/09-performance.adoc[]
+
+include::sections/10-security.adoc[]
+
+include::sections/11-troubleshooting.adoc[]
+
+include::sections/12-changelog.adoc[]
+
+== Additional Resources
+
+=== Internal Resources
+
+* link:{link-internal-dist}[Internal Distribution Guide]
+* link:{link-repo}[Project Repository]
+* link:{link-issues}[Issue Tracker]
+* link:{link-license}[License]
+
+=== External Resources
+
+* link:{link-mqtt}[MQTT Protocol]
+* link:{link-toml}[TOML Format]
+* link:{link-asyncio}[Python asyncio]
+* link:{link-pytest}[pytest Testing Framework]
+
+== Support and Contact
+
+For questions, issues, or contributions:
+
+* **Email**: {var-email}
+* **Issues**: {link-issues}
+* **Internal Team**: Contact your administrator
+
+== License
+
+This project is licensed under the {voc-license} License - see the link:{link-license}[LICENSE] file for details.
+
+---
+
+_Generated on {docdate} for version {voc-version}_
 
 

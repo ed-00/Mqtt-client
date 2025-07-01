@@ -1,0 +1,545 @@
+[[development]]
+== Development Guide
+
+Guide for contributors and developers working on the {voc-project}.
+
+=== Development Environment Setup
+
+==== Prerequisites
+
+[cols="1,2,1"]
+|===
+|Tool |Description |Version
+
+|Python |Python programming language |{var-python-min}+
+|Git |Version control system |2.20+
+|Make |Build automation tool |Any
+|Docker |Containerization (optional) |20+
+|===
+
+==== Initial Setup
+
+[source,bash,subs="attributes"]
+----
+# Clone the repository
+git clone {link-repo}.git
+cd Mqtt-client
+
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install development dependencies
+{var-install-dev}
+
+# Verify setup
+{var-test-cmd}
+----
+
+==== Development Dependencies
+
+The development installation includes:
+
+[cols="1,2,1"]
+|===
+|Package |Purpose |Version
+
+|pytest |Testing framework |7.0.0+
+|pytest-asyncio |Async test support |0.21.0+
+|pytest-mock |Mocking utilities |3.10.0+
+|pytest-cov |Coverage reporting |4.0.0+
+|flake8 |Code linting |6.0.0+
+|bandit |Security analysis |1.7.0+
+|safety |Dependency scanning |2.0.0+
+|===
+
+=== Project Structure
+
+==== Directory Layout
+
+[source,text]
+----
+Mqtt-client/
+├── Listener/                    # Main package
+│   ├── __init__.py             # Package initialization
+│   ├── event_listener.py       # Core EventListener class
+│   ├── safe_config_parser.py   # Configuration parser
+│   └── py.typed                # Type hints marker
+├── tests/                      # Test suite
+│   ├── __init__.py
+│   ├── conftest.py             # Test configuration
+│   ├── test_event_listener.py  # EventListener tests
+│   ├── test_safe_config_parser.py # Parser tests
+│   └── test_integration.py     # Integration tests
+├── docs/                       # Documentation
+│   ├── asciidoc/               # AsciiDoc source
+│   ├── html/                   # Generated HTML
+│   └── pdf/                    # Generated PDF
+├── scripts/                    # Build and utility scripts
+│   ├── build_package.sh        # Package build script
+│   └── run_tests.py            # Test runner
+├── .github/                    # GitHub configuration
+│   └── workflows/              # CI/CD workflows
+├── pyproject.toml              # Modern Python packaging
+├── MANIFEST.in                 # Package manifest
+├── README.md                   # Project readme
+├── LICENSE                     # License file
+├── requirements.txt            # Dependencies
+├── pytest.ini                 # Test configuration
+├── Makefile                    # Build automation
+└── .gitignore                  # Git ignore rules
+----
+
+==== Package Architecture
+
+[source,text]
+----
+Listener Package:
+├── EventListener              # Main listener class
+│   ├── Job tracking           # In-memory job management
+│   ├── MQTT client           # AMQTT client wrapper
+│   ├── Message processing    # TOML message handling
+│   └── Error handling        # Exception management
+├── EventListenerConfig       # Configuration dataclass
+│   ├── Connection settings   # MQTT broker config
+│   ├── Job tracking config   # Job management settings
+│   └── SSL/TLS settings      # Security configuration
+├── SafeConfigParser          # TOML parser with validation
+│   ├── String parsing        # Parse TOML strings
+│   ├── File parsing          # Parse TOML files
+│   └── Validation            # Configuration validation
+├── Data Classes              # Type definitions
+│   ├── JobInfo              # Job information
+│   ├── ReturnType           # Message return type
+│   └── JobStatus (Enum)     # Job status enumeration
+└── Exceptions               # Custom exceptions
+    └── ConfigError          # Configuration errors
+----
+
+=== Development Workflow
+
+==== Branch Strategy
+
+* `main` - Stable production code
+* `develop` - Development integration branch
+* `feature/*` - Feature development branches
+* `hotfix/*` - Critical bug fixes
+
+==== Feature Development
+
+[source,bash]
+----
+# Start new feature
+git checkout develop
+git pull origin develop
+git checkout -b feature/my-new-feature
+
+# Make changes and test
+# ... development work ...
+make test
+make lint
+
+# Commit changes
+git add .
+git commit -m "feat: add new feature description"
+
+# Push and create PR
+git push origin feature/my-new-feature
+# Create pull request to develop branch
+----
+
+==== Code Standards
+
+===== Python Style
+
+* Follow PEP 8 coding standards
+* Use type hints for all functions
+* Maximum line length: 127 characters
+* Use meaningful variable and function names
+* Include docstrings for all public methods
+
+===== Code Quality Checks
+
+[source,bash,subs="attributes"]
+----
+# Run linting
+make lint
+
+# Check specific files
+flake8 Listener/event_listener.py
+
+# Security analysis
+make security
+
+# Dependency vulnerability check
+safety check
+----
+
+===== Testing Requirements
+
+* All new code must have tests
+* Maintain {var-coverage-target}+ code coverage
+* Include both unit and integration tests
+* Test error conditions and edge cases
+
+[source,bash,subs="attributes"]
+----
+# Run all tests
+{var-test-cmd}
+
+# Run with coverage
+make coverage
+
+# Run specific test file
+pytest tests/test_event_listener.py -v
+
+# Run specific test method
+pytest tests/test_event_listener.py::TestJobManagement::test_job_creation -v
+----
+
+=== Adding New Features
+
+==== Example: Adding New Configuration Option
+
+. **Add to EventListenerConfig**:
++
+[source,python]
+----
+@dataclass(frozen=True)
+class EventListenerConfig:
+    # ... existing fields ...
+    new_option: bool = False  # Add new configuration option
+----
+
+. **Update EventListener to use it**:
++
+[source,python]
+----
+def __init__(self, config: EventListenerConfig, ...):
+    self.config = config
+    # Use the new option
+    if config.new_option:
+        self.enable_new_feature()
+----
+
+. **Add tests**:
++
+[source,python]
+----
+def test_new_configuration_option():
+    """Test new configuration option."""
+    config = EventListenerConfig(new_option=True)
+    listener = EventListener(config)
+    assert listener.config.new_option is True
+----
+
+. **Update documentation**:
++
+* Add to configuration guide
+* Update API reference
+* Include usage examples
+
+==== Example: Adding New Job Status
+
+. **Add to JobStatus enum**:
++
+[source,python]
+----
+class JobStatus(Enum):
+    # ... existing statuses ...
+    NEW_STATUS = "new_status"
+----
+
+. **Handle in job management**:
++
+[source,python]
+----
+async def handle_new_status(self, job_id: str):
+    """Handle new job status."""
+    await self._update_job_status(job_id, JobStatus.NEW_STATUS)
+----
+
+. **Add query method**:
++
+[source,python]
+----
+async def get_new_status_jobs(self) -> Dict[str, JobInfo]:
+    """Get jobs with new status."""
+    async with self.job_lock:
+        return {jid: job for jid, job in self.jobs.items() 
+                if job.status == JobStatus.NEW_STATUS}
+----
+
+=== Testing Framework
+
+==== Test Categories
+
+[cols="1,2,1"]
+|===
+|Category |Description |Marker
+
+|Unit Tests |Test individual components |`@pytest.mark.unit`
+|Integration Tests |Test component interactions |`@pytest.mark.integration`
+|Slow Tests |Long-running tests |`@pytest.mark.slow`
+|===
+
+==== Writing Tests
+
+===== Unit Test Example
+
+[source,python]
+----
+import pytest
+from Listener import EventListenerConfig, EventListener
+
+@pytest.mark.unit
+class TestEventListenerConfig:
+    """Test EventListenerConfig class."""
+    
+    def test_default_configuration(self):
+        """Test default configuration values."""
+        config = EventListenerConfig()
+        assert config.host == "localhost"
+        assert config.port == 1883
+        assert config.auto_reconnect is True
+    
+    def test_custom_configuration(self):
+        """Test custom configuration values."""
+        config = EventListenerConfig(
+            host="mqtt.example.com",
+            port=8883,
+            auto_reconnect=False
+        )
+        assert config.host == "mqtt.example.com"
+        assert config.port == 8883
+        assert config.auto_reconnect is False
+----
+
+===== Integration Test Example
+
+[source,python]
+----
+import pytest
+import asyncio
+from unittest.mock import AsyncMock
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+class TestEventListenerIntegration:
+    """Integration tests for EventListener."""
+    
+    async def test_message_processing_workflow(self, event_listener):
+        """Test complete message processing workflow."""
+        # Mock MQTT client
+        event_listener.client = AsyncMock()
+        
+        # Test data
+        test_data = {"job_id": "test-001", "task": "process"}
+        
+        # Process message
+        result = await event_listener.process_message(test_data)
+        
+        # Verify job tracking
+        job_info = await event_listener.get_job_status("test-001")
+        assert job_info is not None
+        assert job_info.status == JobStatus.COMPLETED
+----
+
+===== Async Test Example
+
+[source,python]
+----
+@pytest.mark.asyncio
+async def test_async_job_management(event_listener):
+    """Test async job management operations."""
+    # Create test job
+    await event_listener._create_job("async-001", {"data": "test"})
+    
+    # Verify job exists
+    exists = await event_listener.job_exists("async-001")
+    assert exists is True
+    
+    # Check job status
+    is_running = await event_listener.is_job_running("async-001")
+    assert is_running is True
+----
+
+==== Test Fixtures
+
+Common test fixtures are defined in `conftest.py`:
+
+[source,python]
+----
+@pytest.fixture
+def sample_config():
+    """Sample EventListener configuration."""
+    return EventListenerConfig(
+        host="test-host",
+        port=1883,
+        topic="test/topic",
+        client_id="test-client"
+    )
+
+@pytest.fixture
+def event_listener(sample_config):
+    """EventListener instance for testing."""
+    return EventListener(sample_config)
+
+@pytest.fixture
+async def running_listener(event_listener):
+    """Running EventListener instance."""
+    # Setup
+    await event_listener._connect()
+    yield event_listener
+    # Cleanup
+    event_listener.stop()
+----
+
+=== Build and Release Process
+
+==== Building the Package
+
+[source,bash,subs="attributes"]
+----
+# Clean previous builds
+rm -rf dist/ build/ *.egg-info/
+
+# Build package
+{var-build-cmd}
+
+# Verify build
+ls -la dist/
+----
+
+==== Release Checklist
+
+. **Pre-release**:
+   * [ ] All tests pass
+   * [ ] Code coverage meets requirements
+   * [ ] Documentation updated
+   * [ ] Version numbers updated
+   * [ ] CHANGELOG.md updated
+
+. **Version Update**:
+   * [ ] Update `pyproject.toml` version
+   * [ ] Update `Listener/__init__.py` version
+   * [ ] Update documentation version references
+
+. **Create Release**:
++
+[source,bash]
+----
+# Create git tag
+git tag -a v1.x.x -m "Release version 1.x.x"
+git push origin v1.x.x
+
+# Build and distribute
+./scripts/build_package.sh
+----
+
+. **Post-release**:
+   * [ ] Verify installation from git tag
+   * [ ] Update internal distribution documentation
+   * [ ] Notify team of new release
+
+=== Debugging and Troubleshooting
+
+==== Logging Configuration
+
+[source,python]
+----
+import logging
+
+# Enable debug logging
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+
+# Create logger for the library
+logger = logging.getLogger('Listener')
+logger.setLevel(logging.DEBUG)
+----
+
+==== Common Debug Scenarios
+
+===== MQTT Connection Issues
+
+[source,python]
+----
+# Enable MQTT client debugging
+import logging
+logging.getLogger('amqtt.client').setLevel(logging.DEBUG)
+
+# Test connection manually
+config = EventListenerConfig(host="localhost", port=1883)
+listener = EventListener(config)
+try:
+    await listener._connect()
+    print("Connection successful")
+except Exception as e:
+    print(f"Connection failed: {e}")
+----
+
+===== Job Tracking Issues
+
+[source,python]
+----
+# Monitor job status
+async def debug_job_tracking(listener):
+    while True:
+        all_jobs = await listener.get_all_jobs()
+        running = await listener.get_running_jobs()
+        completed = await listener.get_completed_jobs()
+        
+        print(f"Total jobs: {len(all_jobs)}")
+        print(f"Running: {len(running)}")
+        print(f"Completed: {len(completed)}")
+        
+        await asyncio.sleep(10)
+----
+
+==== Performance Profiling
+
+[source,python]
+----
+import cProfile
+import pstats
+
+def profile_message_processing():
+    """Profile message processing performance."""
+    pr = cProfile.Profile()
+    pr.enable()
+    
+    # Run message processing
+    asyncio.run(process_test_messages())
+    
+    pr.disable()
+    stats = pstats.Stats(pr)
+    stats.sort_stats('cumulative').print_stats(20)
+----
+
+=== Contributing Guidelines
+
+==== Code Review Process
+
+. **Pull Request Requirements**:
+   * [ ] Descriptive title and description
+   * [ ] All tests pass
+   * [ ] Code coverage maintained
+   * [ ] Documentation updated
+   * [ ] No linting errors
+
+. **Review Checklist**:
+   * [ ] Code follows project standards
+   * [ ] Tests cover new functionality
+   * [ ] Error handling is appropriate
+   * [ ] Performance impact considered
+   * [ ] Security implications reviewed
+
+==== Getting Help
+
+* Check existing issues in the repository
+* Review test cases for usage examples
+* Contact maintainer: {var-email}
+* Review internal documentation 
