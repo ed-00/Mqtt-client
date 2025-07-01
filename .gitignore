@@ -36,3 +36,7 @@ Thumbs.db
 # Distribution
 .build/
 .dist/ 
+/mosquitto
+/mosquitto
+*.db
+*.log 

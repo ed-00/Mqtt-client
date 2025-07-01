@@ -346,3 +346,4 @@
 1751371395: New connection from 192.168.117.3:52786 on port 1883.
 1751371395: New client connected from 192.168.117.3:52786 as test-error-handling (p2, c1, k9, u'user').
 1751371398: Client test-error-handling closed its connection.
+1751371841: Saving in-memory database to /mosquitto/data//mosquitto.db.
