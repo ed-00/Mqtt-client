@@ -1,0 +1,49 @@
+{
+  "timestamp": "2025-07-01T11:16:04.055423",
+  "tests": {
+    "authenticated_connection": {
+      "test_name": "authenticated_connection",
+      "host": "mosquitto",
+      "port": 1883,
+      "username": "user",
+      "success": true,
+      "error": null,
+      "details": {
+        "connection_result": 0,
+        "state": "connected",
+        "disconnection": "successful"
+      }
+    },
+    "pub_sub_test": {
+      "test_name": "pub_sub_test",
+      "host": "mosquitto",
+      "port": 1883,
+      "success": true,
+      "error": null,
+      "details": {
+        "published_message": "Hello from MQTT test at 2025-07-01T11:16:04.086583",
+        "received_message": "Hello from MQTT test at 2025-07-01T11:16:04.086583",
+        "topic": "test/connectivity"
+      }
+    },
+    "event_listener_test": {
+      "test_name": "event_listener_test",
+      "host": "mosquitto",
+      "port": 1883,
+      "success": false,
+      "error": "Too many failed attempts",
+      "details": {}
+    },
+    "toml_message_roundtrip": {
+      "test_name": "toml_message_roundtrip",
+      "host": "mosquitto",
+      "port": 1883,
+      "success": true,
+      "error": null,
+      "details": {
+        "published_toml": "\njob_id = \"test-job-123\"\nmessage_type = \"process_data\"\ntimestamp = \"2025-01-02T12:00:00Z\"\n\n[data]\ninput_value = 42\noperation = \"multiply\"\nfactor = 2\n\n[metadata]\nsource = \"test_script\"\npriority = \"high\"\n",
+        "topic": "test/toml_processing"
+      }
+    }
+  }
+}

@@ -1,34 +1,60 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the
 // README at: https://github.com/devcontainers/templates/tree/main/src/python
 {
-  "name": "Python 3",
-  // Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
-  "build": {
-    "dockerfile": "../Docker/dockerfile.dev",
-    "context": ".."
-  },
+  "name": "MQTT Client Development",
+  
+  // Use Docker Compose
+  "dockerComposeFile": "../docker-compose.yml",
+  "service": "mqtt-client-dev",
+  "workspaceFolder": "/app",
+
+  // Configure tool-specific properties.
   "customizations": {
     "vscode": {
       "extensions": [
         "ms-python.python",
         "ms-python.isort",
         "ms-python.black-formatter",
-        "ms-python.pylint"
-      ]
+        "ms-python.pylint",
+        "ms-python.mypy-type-checker",
+        "ms-toolsai.jupyter",
+        "ms-azuretools.vscode-docker"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "python.testing.pytestEnabled": true,
+        "python.testing.pytestArgs": [
+          "tests",
+          "-v"
+        ],
+        "python.linting.enabled": true,
+        "python.linting.pylintEnabled": true
+      }
     }
-  }
+  },
 
   // Features to add to the dev container. More info: https://containers.dev/features.
   // "features": {},
 
   // Use 'forwardPorts' to make a list of ports inside the container available locally.
-  // "forwardPorts": [],
+  "forwardPorts": [1883, 9001],
 
   // Use 'postCreateCommand' to run commands after the container is created.
-  // "postCreateCommand": "pip3 install --user -r requirements.txt",
+  "postCreateCommand": "pip install -e .",
 
-  // Configure tool-specific properties.
-  // "customizations": {},
+  // Set environment variables
+  "containerEnv": {
+    "MQTT_HOST": "mosquitto",
+    "MQTT_PORT": "1883",
+    "MQTT_LOG_DESTINATION": "stdout",
+    "MQTT_LISTENER_PORT": "1883",
+    "MQTT_LISTENER_IP": "0.0.0.0",
+    "MQTT_LISTENER_INTERFACE": "",
+    "MQTT_USERNAME": "user",
+    "MQTT_PASSWORD": "password",
+    "MQTT_BROKER_PORT": "1883",
+    "MQTT_BROKER_PORT_WEB": "9001"
+  }
 
   // Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
   // "remoteUser": "root"

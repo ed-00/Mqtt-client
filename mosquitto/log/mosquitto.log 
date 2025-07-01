@@ -1,0 +1,348 @@
+1751368239: mosquitto version 2.0.21 starting
+1751368239: Config loaded from /mosquitto/config/mosquitto.conf.
+1751368239: Opening ipv4 listen socket on port 1883.
+1751368239: Opening ipv6 listen socket on port 1883.
+1751368239: mosquitto version 2.0.21 running
+1751368254: New connection from 192.168.117.3:55514 on port 1883.
+1751368254: Client <unknown> closed its connection.
+1751368277: New connection from 192.168.117.3:39704 on port 1883.
+1751368277: Client <unknown> closed its connection.
+1751368356: New connection from 192.168.117.3:42800 on port 1883.
+1751368356: Client test-basic-Environmen disconnected, not authorised.
+1751368356: New connection from 192.168.117.3:42814 on port 1883.
+1751368356: Client test-basic-Environmen disconnected, not authorised.
+1751368358: New connection from 192.168.117.3:34404 on port 1883.
+1751368358: Client test-basic-Environmen disconnected, not authorised.
+1751368362: New connection from 192.168.117.3:34420 on port 1883.
+1751368362: Client test-basic-Environmen disconnected, not authorised.
+1751368381: New connection from 192.168.117.3:35828 on port 1883.
+1751368381: Client test-connection disconnected, not authorised.
+1751368381: New connection from 192.168.117.3:35842 on port 1883.
+1751368381: Client test-connection disconnected, not authorised.
+1751368383: New connection from 192.168.117.3:35846 on port 1883.
+1751368383: Client test-connection disconnected, not authorised.
+1751368387: New connection from 192.168.117.3:35860 on port 1883.
+1751368387: Client test-connection disconnected, not authorised.
+1751368387: New connection from 192.168.117.3:35864 on port 1883.
+1751368387: New client connected from 192.168.117.3:35864 as test-auth-connection (p2, c1, k9, u'user').
+1751368390: Client test-auth-connection closed its connection.
+1751368408: New connection from 192.168.117.3:55032 on port 1883.
+1751368408: New client connected from 192.168.117.3:55032 as auto-5FC75FAB-6B83-472C-037C-291D710A3636 (p2, c1, k60, u'user').
+1751368408: Client auto-5FC75FAB-6B83-472C-037C-291D710A3636 disconnected.
+1751368411: New connection from 192.168.117.3:55036 on port 1883.
+1751368411: New client connected from 192.168.117.3:55036 as auto-42DDFCCA-D642-92D8-C4EB-1FF63071A1B1 (p2, c1, k60, u'user').
+1751368421: New connection from 192.168.117.3:36820 on port 1883.
+1751368421: New client connected from 192.168.117.3:36820 as auto-55E2DB69-1879-B381-FD54-DF2FCD53F3D7 (p2, c1, k60, u'user').
+1751368421: Client auto-55E2DB69-1879-B381-FD54-DF2FCD53F3D7 disconnected.
+1751368421: Client auto-42DDFCCA-D642-92D8-C4EB-1FF63071A1B1 disconnected.
+1751368505: New connection from 192.168.117.3:38800 on port 1883.
+1751368505: New client connected from 192.168.117.3:38800 as test-auth-connection (p2, c1, k9, u'user').
+1751368505: Client test-auth-connection closed its connection.
+1751368518: New connection from 192.168.117.3:57112 on port 1883.
+1751368518: New client connected from 192.168.117.3:57112 as test-auth-connection (p2, c1, k9, u'user').
+1751368518: Client test-auth-connection disconnected.
+1751368518: New connection from 192.168.117.3:57120 on port 1883.
+1751368518: New client connected from 192.168.117.3:57120 as test-publisher (p2, c1, k9, u'user').
+1751368518: New connection from 192.168.117.3:57136 on port 1883.
+1751368518: New client connected from 192.168.117.3:57136 as test-subscriber (p2, c1, k9, u'user').
+1751368518: Client test-publisher disconnected.
+1751368518: Client test-subscriber disconnected.
+1751368524: New connection from 192.168.117.3:37882 on port 1883.
+1751368524: New client connected from 192.168.117.3:37882 as test-toml-publisher (p2, c1, k9, u'user').
+1751368524: Client test-toml-publisher disconnected.
+1751368556: New connection from 192.168.117.3:58932 on port 1883.
+1751368556: New client connected from 192.168.117.3:58932 as auto-939005EE-C3F9-07C5-78D3-DCD939ECF009 (p2, c1, k60, u'user').
+1751368564: New connection from 192.168.117.3:44370 on port 1883.
+1751368564: New client connected from 192.168.117.3:44370 as test-auth-connection (p2, c1, k9, u'user').
+1751368564: Client test-auth-connection disconnected.
+1751368564: New connection from 192.168.117.3:44386 on port 1883.
+1751368564: New client connected from 192.168.117.3:44386 as test-publisher (p2, c1, k9, u'user').
+1751368564: New connection from 192.168.117.3:44394 on port 1883.
+1751368564: New client connected from 192.168.117.3:44394 as test-subscriber (p2, c1, k9, u'user').
+1751368564: Client test-publisher disconnected.
+1751368564: Client test-subscriber disconnected.
+1751368570: New connection from 192.168.117.3:40276 on port 1883.
+1751368570: New client connected from 192.168.117.3:40276 as test-toml-publisher (p2, c1, k9, u'user').
+1751368570: Client test-toml-publisher disconnected.
+1751368576: New connection from 192.168.117.3:40280 on port 1883.
+1751368576: New client connected from 192.168.117.3:40280 as test-auth-connection (p2, c1, k9, u'user').
+1751368576: Client test-auth-connection closed its connection.
+1751369580: New connection from 192.168.117.3:57634 on port 1883.
+1751369580: Client test-connection disconnected, not authorised.
+1751369580: New connection from 192.168.117.3:57646 on port 1883.
+1751369580: Client test-connection disconnected, not authorised.
+1751369582: New connection from 192.168.117.3:57660 on port 1883.
+1751369582: Client test-connection disconnected, not authorised.
+1751369586: New connection from 192.168.117.3:57664 on port 1883.
+1751369586: Client test-connection disconnected, not authorised.
+1751369586: New connection from 192.168.117.3:57670 on port 1883.
+1751369586: New client connected from 192.168.117.3:57670 as test-auth-connection (p2, c1, k9, u'user').
+1751369591: New connection from 192.168.117.3:37468 on port 1883.
+1751369591: Client test-publisher-qos0 disconnected, not authorised.
+1751369591: New connection from 192.168.117.3:37476 on port 1883.
+1751369591: Client test-publisher-qos0 disconnected, not authorised.
+1751369593: New connection from 192.168.117.3:37486 on port 1883.
+1751369593: Client test-publisher-qos0 disconnected, not authorised.
+1751369597: New connection from 192.168.117.3:37492 on port 1883.
+1751369597: Client test-publisher-qos0 disconnected, not authorised.
+1751369597: New connection from 192.168.117.3:37506 on port 1883.
+1751369597: Client test-publisher-qos1 disconnected, not authorised.
+1751369597: New connection from 192.168.117.3:37512 on port 1883.
+1751369597: Client test-publisher-qos1 disconnected, not authorised.
+1751369599: New connection from 192.168.117.3:51676 on port 1883.
+1751369599: Client test-publisher-qos1 disconnected, not authorised.
+1751369600: Client test-auth-connection has exceeded timeout, disconnecting.
+1751369603: New connection from 192.168.117.3:51690 on port 1883.
+1751369603: Client test-publisher-qos1 disconnected, not authorised.
+1751369603: New connection from 192.168.117.3:51694 on port 1883.
+1751369603: Client test-publisher-retained disconnected, not authorised.
+1751369603: New connection from 192.168.117.3:51700 on port 1883.
+1751369603: Client test-publisher-retained disconnected, not authorised.
+1751369605: New connection from 192.168.117.3:51712 on port 1883.
+1751369605: Client test-publisher-retained disconnected, not authorised.
+1751369609: New connection from 192.168.117.3:37122 on port 1883.
+1751369609: Client test-publisher-retained disconnected, not authorised.
+1751369609: New connection from 192.168.117.3:37132 on port 1883.
+1751369609: Client test-publisher-json disconnected, not authorised.
+1751369609: New connection from 192.168.117.3:37144 on port 1883.
+1751369609: Client test-publisher-json disconnected, not authorised.
+1751369611: New connection from 192.168.117.3:37146 on port 1883.
+1751369611: Client test-publisher-json disconnected, not authorised.
+1751369615: New connection from 192.168.117.3:37158 on port 1883.
+1751369615: Client test-publisher-json disconnected, not authorised.
+1751369622: New connection from 192.168.117.3:34800 on port 1883.
+1751369622: Client test-publisher-processing disconnected, not authorised.
+1751369622: New connection from 192.168.117.3:34814 on port 1883.
+1751369622: Client test-publisher-processing disconnected, not authorised.
+1751369624: New connection from 192.168.117.3:34816 on port 1883.
+1751369624: Client test-publisher-processing disconnected, not authorised.
+1751369628: New connection from 192.168.117.3:34824 on port 1883.
+1751369628: Client test-publisher-processing disconnected, not authorised.
+1751369628: New connection from 192.168.117.3:34834 on port 1883.
+1751369628: Client test-publisher-multi disconnected, not authorised.
+1751369628: New connection from 192.168.117.3:34838 on port 1883.
+1751369628: Client test-publisher-multi disconnected, not authorised.
+1751369630: New connection from 192.168.117.3:56696 on port 1883.
+1751369630: Client test-publisher-multi disconnected, not authorised.
+1751369634: New connection from 192.168.117.3:56708 on port 1883.
+1751369634: Client test-publisher-multi disconnected, not authorised.
+1751369634: New connection from 192.168.117.3:56722 on port 1883.
+1751369634: Client test-invalid-topic disconnected, not authorised.
+1751369634: New connection from 192.168.117.3:56736 on port 1883.
+1751369634: Client test-invalid-topic disconnected, not authorised.
+1751369636: New connection from 192.168.117.3:56744 on port 1883.
+1751369636: Client test-invalid-topic disconnected, not authorised.
+1751369640: New connection from 192.168.117.3:57018 on port 1883.
+1751369640: Client test-invalid-topic disconnected, not authorised.
+1751369640: New connection from 192.168.117.3:57032 on port 1883.
+1751369640: Client test-publisher-large disconnected, not authorised.
+1751369640: New connection from 192.168.117.3:57046 on port 1883.
+1751369640: Client test-publisher-large disconnected, not authorised.
+1751369642: New connection from 192.168.117.3:57050 on port 1883.
+1751369642: Client test-publisher-large disconnected, not authorised.
+1751369646: New connection from 192.168.117.3:57052 on port 1883.
+1751369646: Client test-publisher-large disconnected, not authorised.
+1751369646: New connection from 192.168.117.3:57060 on port 1883.
+1751369646: Client test-recovery disconnected, not authorised.
+1751369646: New connection from 192.168.117.3:57076 on port 1883.
+1751369646: Client test-recovery disconnected, not authorised.
+1751369648: New connection from 192.168.117.3:57086 on port 1883.
+1751369648: Client test-recovery disconnected, not authorised.
+1751369652: New connection from 192.168.117.3:54624 on port 1883.
+1751369652: Client test-recovery disconnected, not authorised.
+1751369916: Client auto-939005EE-C3F9-07C5-78D3-DCD939ECF009 disconnected.
+1751370040: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1751370087: New connection from 192.168.117.3:40564 on port 1883.
+1751370087: New client connected from 192.168.117.3:40564 as auto-5E9F8A81-16B0-671F-906F-EBAD79ADC7EA (p2, c1, k60, u'user').
+1751370087: Client auto-5E9F8A81-16B0-671F-906F-EBAD79ADC7EA disconnected.
+1751370224: New connection from 192.168.117.3:50180 on port 1883.
+1751370224: New client connected from 192.168.117.3:50180 as auto-B7427476-2FBC-345D-7DC0-7960DFCDF681 (p2, c1, k60, u'user').
+1751370224: Client auto-B7427476-2FBC-345D-7DC0-7960DFCDF681 disconnected.
+1751370233: New connection from 192.168.117.3:33040 on port 1883.
+1751370233: New client connected from 192.168.117.3:33040 as auto-D8253800-88C2-3CF6-1756-4EBC8074AC06 (p2, c1, k60, u'user').
+1751370233: Client auto-D8253800-88C2-3CF6-1756-4EBC8074AC06 disconnected.
+1751370330: New connection from 192.168.117.3:49772 on port 1883.
+1751370330: New client connected from 192.168.117.3:49772 as auto-33B66174-1A1D-FA6D-A1F2-103BDDD05EFA (p2, c1, k60, u'user').
+1751370332: New connection from 192.168.117.3:49788 on port 1883.
+1751370332: New client connected from 192.168.117.3:49788 as auto-9DC3D3EB-3297-6305-9831-07B4EF1D34F3 (p2, c1, k60, u'user').
+1751370332: Client auto-9DC3D3EB-3297-6305-9831-07B4EF1D34F3 disconnected.
+1751370347: New connection from 192.168.117.3:43382 on port 1883.
+1751370347: New client connected from 192.168.117.3:43382 as auto-0D48E855-3120-D219-AB1B-0AF500CB3806 (p2, c1, k60, u'user').
+1751370352: Client auto-0D48E855-3120-D219-AB1B-0AF500CB3806 disconnected.
+1751370355: New connection from 192.168.117.3:32962 on port 1883.
+1751370355: New client connected from 192.168.117.3:32962 as auto-D26A841E-53B7-C16F-3B50-07192243AA7B (p2, c1, k60, u'user').
+1751370355: Client auto-D26A841E-53B7-C16F-3B50-07192243AA7B disconnected.
+1751370370: New connection from 192.168.117.3:59048 on port 1883.
+1751370370: New client connected from 192.168.117.3:59048 as auto-942D86A7-5B67-B776-0DC3-E292F9910EB6 (p2, c1, k60, u'user').
+1751370372: New connection from 192.168.117.3:59050 on port 1883.
+1751370372: New client connected from 192.168.117.3:59050 as auto-734B1864-B735-479F-44F2-3D42908DE811 (p2, c1, k60, u'user').
+1751370372: Client auto-734B1864-B735-479F-44F2-3D42908DE811 disconnected.
+1751370372: Client auto-942D86A7-5B67-B776-0DC3-E292F9910EB6 disconnected.
+1751370416: Client auto-33B66174-1A1D-FA6D-A1F2-103BDDD05EFA closed its connection.
+1751370422: New connection from 192.168.117.3:43426 on port 1883.
+1751370422: Client test-connection disconnected, not authorised.
+1751370422: New connection from 192.168.117.3:43440 on port 1883.
+1751370422: Client test-connection disconnected, not authorised.
+1751370424: New connection from 192.168.117.3:43456 on port 1883.
+1751370424: Client test-connection disconnected, not authorised.
+1751370428: New connection from 192.168.117.3:43470 on port 1883.
+1751370428: Client test-connection disconnected, not authorised.
+1751370428: New connection from 192.168.117.3:57566 on port 1883.
+1751370428: New client connected from 192.168.117.3:57566 as test-auth-connection (p2, c1, k9, u'user').
+1751370433: New connection from 192.168.117.3:57582 on port 1883.
+1751370433: Client test-publisher-qos0 disconnected, not authorised.
+1751370433: New connection from 192.168.117.3:57592 on port 1883.
+1751370433: Client test-publisher-qos0 disconnected, not authorised.
+1751370435: New connection from 192.168.117.3:57602 on port 1883.
+1751370435: Client test-publisher-qos0 disconnected, not authorised.
+1751370439: New connection from 192.168.117.3:50694 on port 1883.
+1751370439: Client test-publisher-qos0 disconnected, not authorised.
+1751370439: New connection from 192.168.117.3:50708 on port 1883.
+1751370439: Client test-publisher-qos1 disconnected, not authorised.
+1751370439: New connection from 192.168.117.3:50724 on port 1883.
+1751370439: Client test-publisher-qos1 disconnected, not authorised.
+1751370441: New connection from 192.168.117.3:50726 on port 1883.
+1751370441: Client test-publisher-qos1 disconnected, not authorised.
+1751370442: Client test-auth-connection has exceeded timeout, disconnecting.
+1751370445: New connection from 192.168.117.3:50728 on port 1883.
+1751370445: Client test-publisher-qos1 disconnected, not authorised.
+1751370445: New connection from 192.168.117.3:50730 on port 1883.
+1751370445: Client test-publisher-retained disconnected, not authorised.
+1751370445: New connection from 192.168.117.3:50734 on port 1883.
+1751370445: Client test-publisher-retained disconnected, not authorised.
+1751370447: New connection from 192.168.117.3:50738 on port 1883.
+1751370447: Client test-publisher-retained disconnected, not authorised.
+1751370451: New connection from 192.168.117.3:42844 on port 1883.
+1751370451: Client test-publisher-retained disconnected, not authorised.
+1751370451: New connection from 192.168.117.3:42848 on port 1883.
+1751370451: Client test-publisher-json disconnected, not authorised.
+1751370451: New connection from 192.168.117.3:42854 on port 1883.
+1751370451: Client test-publisher-json disconnected, not authorised.
+1751370453: New connection from 192.168.117.3:42858 on port 1883.
+1751370453: Client test-publisher-json disconnected, not authorised.
+1751370457: New connection from 192.168.117.3:42870 on port 1883.
+1751370457: Client test-publisher-json disconnected, not authorised.
+1751370464: New connection from 192.168.117.3:34786 on port 1883.
+1751370464: Client test-publisher-processing disconnected, not authorised.
+1751370464: New connection from 192.168.117.3:34800 on port 1883.
+1751370464: Client test-publisher-processing disconnected, not authorised.
+1751370466: New connection from 192.168.117.3:34802 on port 1883.
+1751370466: Client test-publisher-processing disconnected, not authorised.
+1751370470: New connection from 192.168.117.3:44182 on port 1883.
+1751370470: Client test-publisher-processing disconnected, not authorised.
+1751370470: New connection from 192.168.117.3:44190 on port 1883.
+1751370470: Client test-publisher-multi disconnected, not authorised.
+1751370470: New connection from 192.168.117.3:44206 on port 1883.
+1751370470: Client test-publisher-multi disconnected, not authorised.
+1751370472: New connection from 192.168.117.3:44222 on port 1883.
+1751370472: Client test-publisher-multi disconnected, not authorised.
+1751370476: New connection from 192.168.117.3:44226 on port 1883.
+1751370476: Client test-publisher-multi disconnected, not authorised.
+1751370476: New connection from 192.168.117.3:44232 on port 1883.
+1751370476: Client test-invalid-topic disconnected, not authorised.
+1751370476: New connection from 192.168.117.3:44234 on port 1883.
+1751370476: Client test-invalid-topic disconnected, not authorised.
+1751370478: New connection from 192.168.117.3:44250 on port 1883.
+1751370478: Client test-invalid-topic disconnected, not authorised.
+1751370482: New connection from 192.168.117.3:57058 on port 1883.
+1751370482: Client test-invalid-topic disconnected, not authorised.
+1751370482: New connection from 192.168.117.3:57064 on port 1883.
+1751370482: Client test-publisher-large disconnected, not authorised.
+1751370482: New connection from 192.168.117.3:57078 on port 1883.
+1751370482: Client test-publisher-large disconnected, not authorised.
+1751370484: New connection from 192.168.117.3:57084 on port 1883.
+1751370484: Client test-publisher-large disconnected, not authorised.
+1751370488: New connection from 192.168.117.3:57092 on port 1883.
+1751370488: Client test-publisher-large disconnected, not authorised.
+1751370488: New connection from 192.168.117.3:57096 on port 1883.
+1751370488: Client test-recovery disconnected, not authorised.
+1751370488: New connection from 192.168.117.3:57098 on port 1883.
+1751370488: Client test-recovery disconnected, not authorised.
+1751370490: New connection from 192.168.117.3:56486 on port 1883.
+1751370490: Client test-recovery disconnected, not authorised.
+1751370494: New connection from 192.168.117.3:56502 on port 1883.
+1751370494: Client test-recovery disconnected, not authorised.
+1751371048: New connection from 192.168.117.3:32992 on port 1883.
+1751371048: New client connected from 192.168.117.3:32992 as test-event-listener (p2, c1, k29, u'user').
+1751371048: Client test-event-listener disconnected.
+1751371048: New connection from 192.168.117.3:33000 on port 1883.
+1751371048: New client connected from 192.168.117.3:33000 as test-event-listener (p2, c1, k29, u'user').
+1751371048: Client test-event-listener disconnected.
+1751371048: New connection from 192.168.117.3:33010 on port 1883.
+1751371048: New client connected from 192.168.117.3:33010 as test-event-listener (p2, c1, k29, u'user').
+1751371048: Client test-event-listener closed its connection.
+1751371129: New connection from 192.168.117.3:36092 on port 1883.
+1751371129: New client connected from 192.168.117.3:36092 as test-event-listener (p2, c1, k29, u'user').
+1751371129: Client test-event-listener disconnected.
+1751371129: New connection from 192.168.117.3:36106 on port 1883.
+1751371129: New client connected from 192.168.117.3:36106 as test-event-listener (p2, c1, k29, u'user').
+1751371129: Client test-event-listener disconnected.
+1751371129: New connection from 192.168.117.3:36110 on port 1883.
+1751371129: New client connected from 192.168.117.3:36110 as test-event-listener (p2, c1, k29, u'user').
+1751371129: Client test-event-listener disconnected.
+1751371129: New connection from 192.168.117.3:36124 on port 1883.
+1751371129: New client connected from 192.168.117.3:36124 as test-toml-processing (p2, c1, k9, u'user').
+1751371132: New connection from 192.168.117.3:36136 on port 1883.
+1751371132: New client connected from 192.168.117.3:36136 as test-job-generation (p2, c1, k9, u'user').
+1751371135: New connection from 192.168.117.3:36148 on port 1883.
+1751371135: New client connected from 192.168.117.3:36148 as test-error-handling (p2, c1, k9, u'user').
+1751371139: Client test-job-generation closed its connection.
+1751371139: Client test-error-handling closed its connection.
+1751371139: Client test-toml-processing closed its connection.
+1751371164: New connection from 192.168.117.3:35110 on port 1883.
+1751371164: New client connected from 192.168.117.3:35110 as test-toml-processing (p2, c1, k9, u'user').
+1751371168: Client test-toml-processing closed its connection.
+1751371177: New connection from 192.168.117.3:47688 on port 1883.
+1751371177: New client connected from 192.168.117.3:47688 as test-event-listener (p2, c1, k29, u'user').
+1751371177: Client test-event-listener disconnected.
+1751371177: New connection from 192.168.117.3:47702 on port 1883.
+1751371177: New client connected from 192.168.117.3:47702 as test-event-listener (p2, c1, k29, u'user').
+1751371177: Client test-event-listener disconnected.
+1751371178: New connection from 192.168.117.3:47716 on port 1883.
+1751371178: New client connected from 192.168.117.3:47716 as test-event-listener (p2, c1, k29, u'user').
+1751371178: Client test-event-listener disconnected.
+1751371178: New connection from 192.168.117.3:47732 on port 1883.
+1751371178: New client connected from 192.168.117.3:47732 as test-toml-processing (p2, c1, k9, u'user').
+1751371181: New connection from 192.168.117.3:37986 on port 1883.
+1751371181: New client connected from 192.168.117.3:37986 as test-job-generation (p2, c1, k9, u'user').
+1751371184: Client test-toml-processing closed its connection.
+1751371184: Client test-job-generation closed its connection.
+1751371184: New connection from 192.168.117.3:37998 on port 1883.
+1751371184: New client connected from 192.168.117.3:37998 as test-error-handling (p2, c1, k9, u'user').
+1751371187: Client test-error-handling closed its connection.
+1751371196: New connection from 192.168.117.3:50532 on port 1883.
+1751371196: New client connected from 192.168.117.3:50532 as test-event-listener (p2, c1, k29, u'user').
+1751371196: Client test-event-listener disconnected.
+1751371196: New connection from 192.168.117.3:50544 on port 1883.
+1751371196: New client connected from 192.168.117.3:50544 as test-event-listener (p2, c1, k29, u'user').
+1751371196: Client test-event-listener disconnected.
+1751371196: New connection from 192.168.117.3:50550 on port 1883.
+1751371196: New client connected from 192.168.117.3:50550 as test-event-listener (p2, c1, k29, u'user').
+1751371196: Client test-event-listener disconnected.
+1751371197: New connection from 192.168.117.3:50560 on port 1883.
+1751371197: New client connected from 192.168.117.3:50560 as test-toml-processing (p2, c1, k9, u'user').
+1751371200: New connection from 192.168.117.3:48892 on port 1883.
+1751371200: New client connected from 192.168.117.3:48892 as test-job-generation (p2, c1, k9, u'user').
+1751371203: New connection from 192.168.117.3:48908 on port 1883.
+1751371203: New client connected from 192.168.117.3:48908 as test-error-handling (p2, c1, k9, u'user').
+1751371206: Client test-toml-processing closed its connection.
+1751371206: Client test-job-generation closed its connection.
+1751371206: Client test-error-handling closed its connection.
+1751371388: New connection from 192.168.117.3:57284 on port 1883.
+1751371388: New client connected from 192.168.117.3:57284 as test-event-listener (p2, c1, k29, u'user').
+1751371388: Client test-event-listener disconnected.
+1751371388: New connection from 192.168.117.3:57298 on port 1883.
+1751371388: New client connected from 192.168.117.3:57298 as test-event-listener (p2, c1, k29, u'user').
+1751371388: Client test-event-listener disconnected.
+1751371388: New connection from 192.168.117.3:57302 on port 1883.
+1751371388: New client connected from 192.168.117.3:57302 as test-event-listener (p2, c1, k29, u'user').
+1751371388: Client test-event-listener disconnected.
+1751371388: New connection from 192.168.117.3:52770 on port 1883.
+1751371388: New client connected from 192.168.117.3:52770 as test-toml-processing (p2, c1, k9, u'user').
+1751371392: New connection from 192.168.117.3:52780 on port 1883.
+1751371392: New client connected from 192.168.117.3:52780 as test-job-generation (p2, c1, k9, u'user').
+1751371395: Client test-toml-processing closed its connection.
+1751371395: Client test-job-generation closed its connection.
+1751371395: New connection from 192.168.117.3:52786 on port 1883.
+1751371395: New client connected from 192.168.117.3:52786 as test-error-handling (p2, c1, k9, u'user').
+1751371398: Client test-error-handling closed its connection.

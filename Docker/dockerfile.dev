@@ -1,11 +1,15 @@
 FROM python:slim
 
-RUN apt-get install -y --no-install-recommends bash && rm -rf /var/lib/apt/lists/* 
+# Update package list and install necessary packages in one layer
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    bash \
+    git \
+    mosquitto-clients \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY requirements.txt .
 
 RUN pip install -r requirements.txt
-
-RUN apt-get update && apt-get install -y mosquitto-clients
 
 COPY . ./app/
 

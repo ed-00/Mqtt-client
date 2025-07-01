@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  mqtt-client-dev:
+    build:
+      context: .
+      dockerfile: Docker/dockerfile.dev
+    container_name: mqtt-client-dev
+    volumes:
+      - .:/app
+      - /app/.pytest_cache
+      - /app/__pycache__
+    working_dir: /app
+    networks:
+      - mqtt-network
+    depends_on:
+      - mosquitto
+    environment:
+      - MQTT_HOST=mosquitto
+      - MQTT_PORT=1883
+      - PYTEST_CURRENT_TEST
+      - MQTT_LOG_DESTINATION=stdout
+      - MQTT_LISTENER_PORT=1883
+      - MQTT_LISTENER_IP=0.0.0.0
+      - MQTT_LISTENER_INTERFACE=
+      - MQTT_USERNAME=user
+      - MQTT_PASSWORD=password
+      - MQTT_BROKER_PORT=1883
+      - MQTT_BROKER_PORT_WEB=9001
+    command: tail -f /dev/null
+
+  mosquitto:
+    image: eclipse-mosquitto:2.0
+    container_name: mosquitto-broker
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./mosquitto/config:/mosquitto/config
+      - ./mosquitto/data:/mosquitto/data
+      - ./mosquitto/log:/mosquitto/log
+    environment:
+      - MQTT_USERNAME=user
+      - MQTT_PASSWORD=password
+    networks:
+      - mqtt-network
+    restart: unless-stopped
+    command: >
+      sh -c "
+        if [ ! -f /mosquitto/config/password_file ]; then
+          echo 'user:password' > /tmp/passwd_temp &&
+          mosquitto_passwd -U /tmp/passwd_temp &&
+          mv /tmp/passwd_temp /mosquitto/config/password_file &&
+          chmod 600 /mosquitto/config/password_file
+        fi &&
+        /usr/sbin/mosquitto -c /mosquitto/config/mosquitto.conf
+      "
+
+networks:
+  mqtt-network:
+    driver: bridge 

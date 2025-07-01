@@ -162,7 +162,7 @@ class TestEventListenerWithMockMqtt:
         await listener._send_message(  # pylint: disable=protected-access
             "test/output", "test message", 1, False
         )  # pylint: disable=protected-access
-        mock_client.publish.assert_called_with("test/output", "test message", 1, False)
+        mock_client.publish.assert_called_with("test/output", b"test message", 1, False)
 
     @pytest.mark.asyncio
     async def test_job_memory_management(self):

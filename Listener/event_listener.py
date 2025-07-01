@@ -18,7 +18,7 @@ from enum import Enum
 from datetime import datetime
 from typing import Callable, Any, Optional, Dict
 from dataclasses import dataclass, field
-import amqtt.client as mqtt
+import amqtt.client as mqtt  # type: ignore
 from .safe_config_parser import SafeConfigParser, ConfigError
 
 
@@ -170,7 +170,7 @@ class EventListener:
         self.job_lock = asyncio.Lock()  # Thread-safe access to jobs
 
         # Build MQTT client configuration dictionary
-        mqtt_config = {
+        mqtt_config: Dict[str, Any] = {
             "keep_alive": config.keep_alive,
             "ping_delay": config.ping_delay,
             "default_qos": config.default_qos,
@@ -316,10 +316,10 @@ class EventListener:
                     key=lambda x: x[1].completed_at or datetime.min,
                 )
 
-                jobs_to_remove = sorted_jobs[
+                excess_jobs = sorted_jobs[
                     : len(self.jobs) - self.config.max_jobs_in_memory
                 ]
-                for job_id, _ in jobs_to_remove:
+                for job_id, _ in excess_jobs:
                     del self.jobs[job_id]
 
     async def _create_job(self, job_id: str, input_data: Dict[str, Any]) -> bool:
@@ -575,13 +575,16 @@ class EventListener:
                             if return_value.topic
                             else self.config.results_topic
                         )
-                        # Ensure data is not None
+                        # Ensure data is not None and serialize it
                         data = (
                             return_value.data if return_value.data is not None else {}
                         )
+                        # Serialize data to JSON for publishing
+                        import json
+                        serialized_data = json.dumps(data).encode('utf-8')
                         await self.client.publish(
                             topic,
-                            data,
+                            serialized_data,
                             qos=return_value.qos,
                             retain=return_value.retain,
                         )
@@ -683,7 +686,9 @@ class EventListener:
             OSError: If publishing fails due to network issues
             ValueError: If topic or QoS is invalid
         """
-        await self.client.publish(topic, data, qos, retain)
+        # Encode string data to bytes for MQTT client
+        data_bytes = data.encode('utf-8') if isinstance(data, str) else data
+        await self.client.publish(topic, data_bytes, qos, retain)
 
     async def _send_message_with_toml(
         self, topic: str, toml_path: str, qos: int, retain: bool
