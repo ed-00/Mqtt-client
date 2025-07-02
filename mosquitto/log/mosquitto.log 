@@ -347,3 +347,36 @@
 1751371395: New client connected from 192.168.117.3:52786 as test-error-handling (p2, c1, k9, u'user').
 1751371398: Client test-error-handling closed its connection.
 1751371841: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1751454627: mosquitto version 2.0.21 starting
+1751454627: Config loaded from /mosquitto/config/mosquitto.conf.
+1751454627: Warning: File /mosquitto/config/password_file has world readable permissions. Future versions will refuse to load this file.
+To fix this, use `chmod 0700 /mosquitto/config/password_file`.
+1751454627: Opening ipv4 listen socket on port 1883.
+1751454627: Opening ipv6 listen socket on port 1883.
+1751454627: mosquitto version 2.0.21 running
+1751455004: mosquitto version 2.0.21 starting
+1751455004: Config loaded from /mosquitto/config/mosquitto.conf.
+1751455004: Warning: File /mosquitto/config/password_file has world readable permissions. Future versions will refuse to load this file.
+To fix this, use `chmod 0700 /mosquitto/config/password_file`.
+1751455004: Opening ipv4 listen socket on port 1883.
+1751455004: Opening ipv6 listen socket on port 1883.
+1751455004: mosquitto version 2.0.21 running
+1751455563: New connection from 192.168.117.3:39372 on port 1883.
+1751455563: New client connected from 192.168.117.3:39372 as test-event-listener (p2, c1, k29, u'user').
+1751455563: Client test-event-listener disconnected.
+1751455563: New connection from 192.168.117.3:39384 on port 1883.
+1751455563: New client connected from 192.168.117.3:39384 as test-event-listener (p2, c1, k29, u'user').
+1751455563: Client test-event-listener disconnected.
+1751455563: New connection from 192.168.117.3:39398 on port 1883.
+1751455563: New client connected from 192.168.117.3:39398 as test-event-listener (p2, c1, k29, u'user').
+1751455563: Client test-event-listener disconnected.
+1751455564: New connection from 192.168.117.3:39402 on port 1883.
+1751455564: New client connected from 192.168.117.3:39402 as test-toml-processing (p2, c1, k9, u'user').
+1751455567: New connection from 192.168.117.3:39416 on port 1883.
+1751455567: New client connected from 192.168.117.3:39416 as test-job-generation (p2, c1, k9, u'user').
+1751455570: New connection from 192.168.117.3:50010 on port 1883.
+1751455570: New client connected from 192.168.117.3:50010 as test-error-handling (p2, c1, k9, u'user').
+1751455573: Client test-toml-processing closed its connection.
+1751455573: Client test-job-generation closed its connection.
+1751455573: Client test-error-handling closed its connection.
+1751456805: Saving in-memory database to /mosquitto/data//mosquitto.db.

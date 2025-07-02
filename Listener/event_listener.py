@@ -18,6 +18,8 @@ from enum import Enum
 from datetime import datetime
 from typing import Callable, Any, Optional, Dict
 from dataclasses import dataclass, field
+
+import tomli_w 
 import amqtt.client as mqtt  # type: ignore
 from .safe_config_parser import SafeConfigParser, ConfigError
 
@@ -137,6 +139,7 @@ class ReturnType:
     message_id: int
     timestamp: datetime
     job_id: str  # Added job_id to return type
+    
 
 
 class EventListener:
@@ -579,9 +582,8 @@ class EventListener:
                         data = (
                             return_value.data if return_value.data is not None else {}
                         )
-                        # Serialize data to JSON for publishing
-                        import json
-                        serialized_data = json.dumps(data).encode('utf-8')
+                        # Serialize data to TOML for publishing
+                        serialized_data = tomli_w.dumps(data).encode('utf-8')
                         await self.client.publish(
                             topic,
                             serialized_data,

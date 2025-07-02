@@ -61,7 +61,7 @@ pip install git+https://github.com/ed-00/Mqtt-client.git
 
 # Install a specific branch or tag
 pip install git+https://github.com/ed-00/Mqtt-client.git@main
-pip install git+https://github.com/ed-00/Mqtt-client.git@v1.0.0
+pip install git+https://github.com/ed-00/Mqtt-client.git@v1.0.2
 ```
 
 ### From Local Clone
@@ -95,7 +95,7 @@ For distributing within your organization, you can:
    python -m build
    
    # Share the .whl file from dist/ directory
-   pip install mqtt_event_listener-1.0.0-py3-none-any.whl
+   pip install mqtt_event_listener-1.0.2-py3-none-any.whl
    ```
 
 2. **Set up an internal package index** or use your organization's private repository
@@ -132,6 +132,7 @@ def process_message(data, job_id):
     print(f"Processing job {job_id}: {data}")
     
     # Your processing logic here
+    # The result should be a dictionary that will be serialized to TOML
     result = {"status": "processed", "job_id": job_id}
     
     # Return results to be published back
@@ -337,6 +338,10 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 
 ## Version History
 
+### Version 1.0.2
+- Updated to use TOML for all published messages.
+- Updated versioning and release process.
+
 ### Version 1.0.0
 - Initial internal release
 - MQTT event listening with job tracking
@@ -353,8 +358,8 @@ To create a new version for internal distribution:
 2. Update this README with release notes
 3. Commit and tag the release:
    ```bash
-   git tag v1.1.0
-   git push origin v1.1.0
+   git tag v1.0.2
+   git push origin v1.0.2
    ```
 4. Build the package using the provided script:
    ```bash
