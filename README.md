@@ -61,7 +61,7 @@ pip install git+https://github.com/ed-00/Mqtt-client.git
 
 # Install a specific branch or tag
 pip install git+https://github.com/ed-00/Mqtt-client.git@main
-pip install git+https://github.com/ed-00/Mqtt-client.git@v1.0.2
+pip install git+https://github.com/ed-00/Mqtt-client.git@v1.0.3
 ```
 
 ### From Local Clone
@@ -358,8 +358,8 @@ To create a new version for internal distribution:
 2. Update this README with release notes
 3. Commit and tag the release:
    ```bash
-   git tag v1.0.2
-   git push origin v1.0.2
+   git tag v1.0.3
+   git push origin v1.0.3
    ```
 4. Build the package using the provided script:
    ```bash
