@@ -380,3 +380,10 @@ To fix this, use `chmod 0700 /mosquitto/config/password_file`.
 1751455573: Client test-job-generation closed its connection.
 1751455573: Client test-error-handling closed its connection.
 1751456805: Saving in-memory database to /mosquitto/data//mosquitto.db.
+1751545395: mosquitto version 2.0.21 starting
+1751545395: Config loaded from /mosquitto/config/mosquitto.conf.
+1751545395: Warning: File /mosquitto/config/password_file has world readable permissions. Future versions will refuse to load this file.
+To fix this, use `chmod 0700 /mosquitto/config/password_file`.
+1751545395: Opening ipv4 listen socket on port 1883.
+1751545395: Opening ipv6 listen socket on port 1883.
+1751545395: mosquitto version 2.0.21 running
